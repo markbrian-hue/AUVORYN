@@ -553,7 +553,9 @@ class _Apartment {
       final material = polygon.material;
       final path = Path()
         ..addPolygon([for (final p in polygon.points) project(p)], true);
-      final paint = Paint()..color = material.color;
+      final paint = Paint()
+        ..color = material.color
+        ..isAntiAlias = material.color.a == 1;
       if (material.endColor != null) {
         paint.shader = ui.Gradient.linear(
           project(material.gradientStart!),
@@ -563,7 +565,7 @@ class _Apartment {
       }
       canvas.drawPath(path, paint);
       // Cover subpixel seams between adjacent opaque mesh fragments.
-      if (material.color.a == 1 && material.endColor == null) {
+      if (material.color.a == 1) {
         canvas.drawPath(
           path,
           paint
