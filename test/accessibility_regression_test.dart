@@ -70,7 +70,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('player_toggle')));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('player_toggle')),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

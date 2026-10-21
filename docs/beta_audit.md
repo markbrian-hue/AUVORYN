@@ -49,7 +49,7 @@ Local Dart formatting and `git diff --check` were executed. A standalone Dart hi
 setup was rejected by automatic approval review because it attempted to reach
 the cloud instance metadata service. That request was not retried. GitHub Actions
 is the independent validation path for analyzer, tests and Android compilation.
-Results will be recorded below against the final PR commit.
+Final results are attached to [pull request #9](https://github.com/markbrian-hue/AUVORYN/pull/9) and its commit-specific Checks tab. The delivery summary records the validated commit and run.
 
 New tests cover controller races, completed-track restart, disposal, favorite
 preservation, playlist updates, failed-write recovery, old schema v1/v2 upgrades,
@@ -67,7 +67,7 @@ controlled native-boundary double, not real audio output.
 | Standalone Dart listening-tracker regression | PASS |
 | Font parsing and solid-token contrast calculation | PASS — minimum 6.55:1 for tested pairs |
 | Local `flutter pub get`, analyzer, test, Android build | BLOCKED / NOT RUN after dependency setup rejection |
-| GitHub Actions analyzer, tests, debug APK | Pending final CI result |
+| GitHub Actions analyzer, tests, debug APK | See PR #9 Checks and delivery summary for the final commit-specific result |
 | Device audio, Bluetooth, calls, lock-screen, battery/FPS, screenshot review | NOT RUN — no device/emulator available |
 | iOS build, release signing, Play Store readiness | NOT RUN / NOT READY |
 
@@ -110,6 +110,18 @@ checks scheduled animation callbacks, not device energy use.
 | 3 | Queue reorder/remove and saved shuffle/repeat | Better everyday playback control | Medium | Queue identity and media-session synchronization | P2 |
 | 4 | Lazy library list, album/artist views and sorting | Makes larger libraries usable | Medium | Low architecture impact; benchmark first | P2 |
 | 5 | First-launch import and accessibility walkthrough | Improves discoverability | Low/medium | Low runtime cost | P3 |
+
+## GitHub delivery
+
+- Pull request: https://github.com/markbrian-hue/AUVORYN/pull/9
+- Branch: `qa/beta-reliability-and-accessibility`
+- Changes are isolated from `main`; no merge or force-push is performed.
+- Commits separate audio/library reliability, UI and fonts, validation fixes,
+  and non-destructive missing-file recovery. Exact hashes are listed in the PR.
+- Early CI runs exposed test API compatibility/lint problems and an offscreen
+  test-finder mistake; those were fixed without removing the relevant assertions.
+- Only mark the PR ready after analyzer, all tests and debug APK compilation pass.
+  Device-dependent checks remain required even after automated CI succeeds.
 
 ## Next three milestones
 
