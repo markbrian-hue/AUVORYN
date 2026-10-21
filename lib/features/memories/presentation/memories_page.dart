@@ -118,8 +118,11 @@ class _Journal extends ConsumerWidget {
         try {
           await ref.read(musicProvider.notifier).clearListeningHistory();
         } catch (_) {
-          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unable to clear listening history.')));
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Unable to clear listening history.')),
+            );
+          }
         }
       })),
   ]);
