@@ -3,6 +3,7 @@ import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/core/widgets/auvoryn_logo.dart';
 import 'package:auvoryn/features/atmosphere/presentation/atmosphere_sheet.dart';
 import 'package:auvoryn/features/home_room/presentation/room_scene.dart';
+import 'package:auvoryn/features/music/application/music_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +14,11 @@ class RoomPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(roomSettingsProvider);
+    // Select only the current title so high-frequency position updates do not
+    // rebuild the heavyweight room scene every few milliseconds.
+    final currentTitle = ref.watch(musicProvider.select(
+      (music) => music.currentSong?.title,
+    ));
     final titleStyle = AppTheme.editorial(size: 40);
     return SafeArea(
       child: CustomScrollView(
@@ -76,6 +82,42 @@ class RoomPage extends ConsumerWidget {
                     },
                     onShelfTap: () => context.go('/library'),
                   ),
+                  if (currentTitle != null) ...[
+                    const SizedBox(height: 17),
+                    Material(
+                      color: AuvorynColors.raised,
+                      borderRadius: BorderRadius.circular(18),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () => context.push('/now-playing'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 17, vertical: 12),
+                          child: Row(children: [
+                            const Icon(Icons.album_rounded,
+                              color: AuvorynColors.champagne, size: 25),
+                            const SizedBox(width: 13),
+                            Expanded(child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('ON THE TURNTABLE',
+                                  style: TextStyle(fontSize: 10,
+                                    letterSpacing: 1.5,
+                                    color: AuvorynColors.champagne)),
+                                const SizedBox(height: 4),
+                                Text(currentTitle, maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
+                              ],
+                            )),
+                            const Icon(Icons.arrow_outward_rounded,
+                              color: AuvorynColors.mist, size: 19),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 19),
                   _AtmosphereCard(
                     moodName: settings.mood.title,

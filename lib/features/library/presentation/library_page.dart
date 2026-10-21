@@ -265,28 +265,70 @@ class SongRow extends ConsumerWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ListTile(
-    key: Key('song_${song.id}'),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 5),
-    leading: const _SongArtwork(icon: Icons.music_note_rounded),
-    title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-    subtitle: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis,
-      style: const TextStyle(fontSize: 12, color: AuvorynColors.mist)),
-    onTap: onTap,
-    trailing: PopupMenuButton<String>(
-      tooltip: 'Track actions',
-      onSelected: (action) {
-        if (action == 'favorite') {
-          ref.read(musicProvider.notifier).toggleFavorite(song);
-        } else if (action == 'playlist') {
-          showAddToPlaylistSheet(context, song);
-        }
-      },
-      itemBuilder: (_) => [
-        PopupMenuItem(value: 'favorite', child: Text(song.isFavorite ? 'Remove favorite' : 'Add to favorites')),
-        const PopupMenuItem(value: 'playlist', child: Text('Add to playlist…')),
-      ],
+  Widget build(BuildContext context, WidgetRef ref) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(17),
+      child: InkWell(
+        key: Key('song_${song.id}'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(17),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(5, 8, 0, 8),
+          child: Row(children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF58434A), Color(0xFF272A34), AuvorynColors.slate],
+                ),
+              ),
+              child: const Icon(Icons.album_rounded,
+                color: AuvorynColors.champagne, size: 27),
+            ),
+            const SizedBox(width: 13),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 15,
+                    fontWeight: FontWeight.w600, color: AuvorynColors.ivory)),
+                const SizedBox(height: 5),
+                Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: AuvorynColors.mist)),
+              ],
+            )),
+            if (song.isFavorite)
+              const Padding(
+                padding: EdgeInsets.only(right: 3),
+                child: Icon(Icons.favorite_rounded,
+                  color: AuvorynColors.champagne, size: 15),
+              ),
+            PopupMenuButton<String>(
+              tooltip: 'Track actions',
+              icon: const Icon(Icons.more_horiz_rounded,
+                color: AuvorynColors.mist),
+              onSelected: (action) {
+                if (action == 'favorite') {
+                  ref.read(musicProvider.notifier).toggleFavorite(song);
+                } else if (action == 'playlist') {
+                  showAddToPlaylistSheet(context, song);
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'favorite', child: Text(
+                  song.isFavorite ? 'Remove favorite' : 'Add to favorites')),
+                const PopupMenuItem(value: 'playlist', child: Text('Add to playlist…')),
+              ],
+            ),
+          ]),
+        ),
+      ),
     ),
   );
 }
