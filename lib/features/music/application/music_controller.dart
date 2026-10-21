@@ -170,6 +170,7 @@ class MusicController extends Notifier<MusicState> {
     for (final song in songs)
       AudioSource.uri(Uri.file(song.path), tag: MediaItem(
         id: song.id, title: song.title, artist: song.artist, album: song.album,
+        artUri: song.artworkPath == null ? null : Uri.file(song.artworkPath!),
       )),
   ];
 
@@ -217,6 +218,28 @@ class MusicController extends Notifier<MusicState> {
       state = state.copyWith(loading: false);
     }
     return count;
+  }
+
+  /// Refresh tags on demand without blocking startup or audio playback.
+  Future<int> refreshMetadata() async {
+    await _restoration;
+    if (state.loading || state.songs.isEmpty) return 0;
+    state = state.copyWith(loading: true, clearError: true);
+    try {
+      final updated = await _store.refreshMetadata(state.songs);
+      final changed = updated.where((song) {
+        final before = state.songs.where((item) => item.id == song.id).first;
+        return song.title != before.title || song.artist != before.artist ||
+          song.album != before.album || song.artworkPath != before.artworkPath;
+      }).length;
+      if (!_disposed) state = state.copyWith(songs: updated);
+      return changed;
+    } catch (error) {
+      if (!_disposed) state = state.copyWith(error: 'Metadata refresh failed: $error');
+      return 0;
+    } finally {
+      if (!_disposed) state = state.copyWith(loading: false);
+    }
   }
 
   Future<void> playSongs(List<Song> selected, {int startIndex = 0}) async {

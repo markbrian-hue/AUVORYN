@@ -1,5 +1,6 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/core/widgets/vinyl_artwork.dart';
+import 'package:auvoryn/core/widgets/song_artwork.dart';
 import 'package:auvoryn/features/music/application/music_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,7 @@ class NowPlayingPage extends ConsumerStatefulWidget {
 class _NowPlayingPageState extends ConsumerState<NowPlayingPage> {
   double? _scrubbingMs;
   String? _trackId;
+  bool _preferVinyl = false;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +32,7 @@ class _NowPlayingPageState extends ConsumerState<NowPlayingPage> {
     if (_trackId != song.id) {
       _trackId = song.id;
       _scrubbingMs = null;
+      _preferVinyl = false;
     }
     final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final totalMs = music.duration.inMilliseconds.toDouble();
@@ -94,23 +97,51 @@ class _NowPlayingPageState extends ConsumerState<NowPlayingPage> {
                       duration: reduceMotion ? Duration.zero : AuvorynMotion.normal,
                       switchInCurve: Curves.easeOutCubic,
                       child: Container(
-                        key: ValueKey(song.id),
+                        key: ValueKey('${song.id}_${_preferVinyl ? 'vinyl' : 'cover'}'),
                         width: diameter + 26,
                         height: diameter + 30,
                         alignment: Alignment.center,
-                        child: VinylArtwork(
-                          title: song.title,
-                          size: diameter,
-                          playing: music.playing,
-                        ),
+                        child: song.artworkPath != null && !_preferVinyl
+                            ? DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(29),
+                                  boxShadow: [BoxShadow(
+                                    color: Colors.black.withValues(alpha: .38),
+                                    blurRadius: 36, offset: const Offset(0, 15),
+                                  )],
+                                ),
+                                child: SongArtwork(
+                                  artworkPath: song.artworkPath,
+                                  title: song.title,
+                                  size: diameter,
+                                  radius: 28,
+                                ),
+                              )
+                            : VinylArtwork(
+                                title: song.title,
+                                size: diameter,
+                                playing: music.playing,
+                              ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 9),
-                Center(child: Text('YOUR PRIVATE PRESSING',
-                  style: TextStyle(color: AuvorynColors.champagne.withValues(alpha: .82),
-                    fontSize: 10, letterSpacing: 2.8))),
+                if (song.artworkPath != null)
+                  Center(child: TextButton.icon(
+                    key: const Key('toggle_artwork_view'),
+                    onPressed: () => setState(() => _preferVinyl = !_preferVinyl),
+                    icon: Icon(_preferVinyl ? Icons.image_outlined : Icons.album_rounded,
+                      size: 16),
+                    label: Text(_preferVinyl ? 'VIEW COVER' : 'VIEW VINYL'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AuvorynColors.champagne,
+                    ),
+                  ))
+                else
+                  Center(child: Text('YOUR PRIVATE PRESSING',
+                    style: TextStyle(color: AuvorynColors.champagne.withValues(alpha: .82),
+                      fontSize: 10, letterSpacing: 2.8))),
                 const SizedBox(height: 29),
                 Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                   Expanded(child: Column(
@@ -123,13 +154,18 @@ class _NowPlayingPageState extends ConsumerState<NowPlayingPage> {
                           key: ValueKey('title_${song.id}'),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontSize: 27, height: 1.2),
+                          style: AppTheme.trackHeading(),
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: AuvorynColors.mist, fontSize: 15)),
+                      if (song.album != 'Local files') ...[
+                        const SizedBox(height: 3),
+                        Text(song.album, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AuvorynColors.champagne, fontSize: 12)),
+                      ],
                     ],
                   )),
                   const SizedBox(width: 12),

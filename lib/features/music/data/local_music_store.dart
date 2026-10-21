@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:auvoryn/features/music/domain/song.dart';
+import 'package:auvoryn/features/music/data/music_tag_reader.dart';
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
@@ -10,10 +12,11 @@ import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
 class LocalMusicStore {
-  LocalMusicStore._(this._db, this._musicDirectory);
+  LocalMusicStore._(this._db, this._musicDirectory, this._artworkDirectory);
 
   final Database _db;
   final Directory _musicDirectory;
+  final Directory _artworkDirectory;
   static const _uuid = Uuid();
   static const supportedExtensions = {'mp3', 'm4a', 'aac', 'wav', 'flac', 'ogg', 'opus'};
 
@@ -21,9 +24,11 @@ class LocalMusicStore {
     final support = await getApplicationSupportDirectory();
     final musicDir = Directory(p.join(support.path, 'imported_music'));
     await musicDir.create(recursive: true);
+    final artworkDir = Directory(p.join(support.path, 'album_artwork'));
+    await artworkDir.create(recursive: true);
     final db = await openDatabase(
       p.join(support.path, 'auvoryn_music.db'),
-      version: 1,
+      version: 2,
       onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: (db, version) async {
         await db.execute('''
@@ -31,7 +36,8 @@ class LocalMusicStore {
             id TEXT PRIMARY KEY, title TEXT NOT NULL, artist TEXT NOT NULL,
             album TEXT NOT NULL, filename TEXT NOT NULL, path TEXT NOT NULL,
             sha256 TEXT NOT NULL UNIQUE, imported_at INTEGER NOT NULL,
-            favorite INTEGER NOT NULL DEFAULT 0
+            favorite INTEGER NOT NULL DEFAULT 0,
+            artwork_path TEXT
           )
         ''');
         await db.execute('''
@@ -49,8 +55,13 @@ class LocalMusicStore {
           CREATE TABLE app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE tracks ADD COLUMN artwork_path TEXT');
+        }
+      },
     );
-    return LocalMusicStore._(db, musicDir);
+    return LocalMusicStore._(db, musicDir, artworkDir);
   }
 
   Future<MusicBootstrap> load() async {
@@ -111,17 +122,82 @@ class LocalMusicStore {
     final destination = File(p.join(_musicDirectory.path, '$id.$ext'));
     try {
       await source.copy(destination.path);
+      // Tag decoding runs off the main isolate and is non-fatal for old files.
+      final tags = await MusicTagReader.fromFile(destination.path);
+      final artPath = await _saveArtwork(id, tags?.picture);
       final song = Song(
-        id: id, title: Song.titleFromFileName(picked.name),
+        id: id, title: tags?.title ?? Song.titleFromFileName(picked.name),
+        artist: tags?.artist ?? 'Unknown artist',
+        album: tags?.album ?? 'Local files',
+        artworkPath: artPath,
         path: destination.path, fileName: picked.name,
         sha256: checksum, importedAt: DateTime.now(),
       );
-      await _db.insert('tracks', song.toRow());
+      try {
+        await _db.insert('tracks', song.toRow());
+      } catch (_) {
+        if (artPath != null) {
+          final art = File(artPath);
+          if (await art.exists()) await art.delete();
+        }
+        rethrow;
+      }
       return song;
     } catch (_) {
       if (await destination.exists()) await destination.delete();
       rethrow;
     }
+  }
+
+
+  Future<String?> _saveArtwork(String id, List<int>? bytes) async {
+    if (bytes == null || bytes.isEmpty || bytes.length > 8 * 1024 * 1024) return null;
+    final data = Uint8List.fromList(bytes);
+    final extension = MusicTagReader.pictureExtension(data);
+    if (extension == null) return null;
+    final file = File(p.join(_artworkDirectory.path, '$id.$extension'));
+    try {
+      await file.writeAsBytes(data, flush: true);
+      return file.path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Opt-in background refresh for songs imported before metadata support.
+  /// Preserves playlist IDs, favorites, positions and audio file bytes.
+  Future<List<Song>> refreshMetadata(List<Song> songs) async {
+    final result = <Song>[];
+    for (final song in songs) {
+      if (!await File(song.path).exists()) {
+        result.add(song);
+        continue;
+      }
+      final tags = await MusicTagReader.fromFile(song.path);
+      if (tags == null) {
+        result.add(song);
+        continue;
+      }
+      String? artPath = song.artworkPath;
+      if (artPath == null && tags.picture != null) {
+        artPath = await _saveArtwork(song.id, tags.picture);
+      }
+      final updated = song.copyWith(
+        title: tags.title ?? song.title,
+        artist: tags.artist ?? song.artist,
+        album: tags.album ?? song.album,
+        artworkPath: artPath,
+      );
+      if (song.title != updated.title || song.artist != updated.artist ||
+          song.album != updated.album || song.artworkPath != updated.artworkPath) {
+        await _db.update('tracks', {
+          'title': updated.title, 'artist': updated.artist,
+          'album': updated.album, 'artwork_path': updated.artworkPath,
+        }, where: 'id = ?', whereArgs: [song.id]);
+      }
+      result.add(updated);
+    }
+    return result;
   }
 
   Future<void> setFavorite(String id, bool value) async => _db.update(

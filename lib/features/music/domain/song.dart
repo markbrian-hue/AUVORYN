@@ -10,6 +10,7 @@ class Song {
     this.artist = 'Unknown artist',
     this.album = 'Local files',
     this.isFavorite = false,
+    this.artworkPath,
   });
 
   final String id;
@@ -21,17 +22,21 @@ class Song {
   final String artist;
   final String album;
   final bool isFavorite;
+  /// Path to independently stored, locally extracted album artwork.
+  final String? artworkPath;
 
-  Song copyWith({bool? isFavorite}) => Song(
+  Song copyWith({bool? isFavorite, String? title, String? artist,
+    String? album, String? artworkPath}) => Song(
     id: id,
-    title: title,
+    title: title ?? this.title,
     path: path,
     fileName: fileName,
     sha256: sha256,
     importedAt: importedAt,
-    artist: artist,
-    album: album,
+    artist: artist ?? this.artist,
+    album: album ?? this.album,
     isFavorite: isFavorite ?? this.isFavorite,
+    artworkPath: artworkPath ?? this.artworkPath,
   );
 
   static String titleFromFileName(String name) {
@@ -50,6 +55,7 @@ class Song {
     importedAt: DateTime.fromMillisecondsSinceEpoch(row['imported_at'] as int),
     artist: row['artist'] as String,
     album: row['album'] as String,
+    artworkPath: row['artwork_path'] as String?,
     isFavorite: (row['favorite'] as int) == 1,
   );
 
@@ -62,6 +68,7 @@ class Song {
     'imported_at': importedAt.millisecondsSinceEpoch,
     'artist': artist,
     'album': album,
+    'artwork_path': artworkPath,
     'favorite': isFavorite ? 1 : 0,
   };
 }

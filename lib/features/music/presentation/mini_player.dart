@@ -1,4 +1,5 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
+import 'package:auvoryn/core/widgets/song_artwork.dart';
 import 'package:auvoryn/features/music/application/music_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +38,7 @@ class MiniPlayer extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
                   child: Row(children: [
-                    const _MiniRecord(),
+                    SongArtwork(artworkPath: song.artworkPath, title: song.title, size: 46, radius: 13),
                     const SizedBox(width: 11),
                     Expanded(child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,21 +83,4 @@ class MiniPlayer extends ConsumerWidget {
       ),
     );
   }
-}
-
-class _MiniRecord extends StatelessWidget {
-  const _MiniRecord();
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 46, height: 46,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(13),
-      gradient: const LinearGradient(
-        colors: [AuvorynColors.blush, AuvorynColors.slate],
-      ),
-    ),
-    child: const Icon(Icons.album_rounded, color: AuvorynColors.champagne,
-      size: 27),
-  );
 }

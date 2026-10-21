@@ -103,6 +103,15 @@ abstract final class AppTheme {
     );
   }
 
+  // Resilient editorial sizing: never assume a system has a specific font.
+  static TextStyle trackHeading({double size = 27}) => TextStyle(
+    fontSize: size,
+    fontWeight: FontWeight.w600,
+    letterSpacing: -0.7,
+    height: 1.16,
+    color: AuvorynColors.ivory,
+  );
+
   static TextStyle editorial({double size = 38, Color? color}) => TextStyle(
     fontFamily: 'InstrumentSerif',
     fontFamilyFallback: const ['Georgia', 'serif'],

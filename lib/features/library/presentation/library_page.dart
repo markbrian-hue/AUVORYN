@@ -1,5 +1,6 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/core/widgets/auvoryn_logo.dart';
+import 'package:auvoryn/core/widgets/song_artwork.dart';
 import 'package:auvoryn/features/music/application/music_controller.dart';
 import 'package:auvoryn/features/music/domain/song.dart';
 import 'package:flutter/material.dart';
@@ -75,6 +76,21 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
           padding: const EdgeInsets.only(top: 12),
           child: Text(music.error!, style: const TextStyle(color: Color(0xFFFF9F9A), fontSize: 13)),
         ),
+        if (music.songs.isNotEmpty)
+          Align(alignment: Alignment.centerRight, child: TextButton.icon(
+            key: const Key('refresh_metadata'),
+            onPressed: music.loading ? null : () async {
+              final changed = await controller.refreshMetadata();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(changed == 0
+                  ? 'No new track details or artwork were found.'
+                  : 'Updated details for $changed track${changed == 1 ? '' : 's'}.'),
+              ));
+            },
+            icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+            label: const Text('Refresh details'),
+          )),
         const SizedBox(height: 22),
         SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
           for (final section in LibrarySection.values)
@@ -277,19 +293,10 @@ class SongRow extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(5, 8, 0, 8),
           child: Row(children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF58434A), Color(0xFF272A34), AuvorynColors.slate],
-                ),
-              ),
-              child: const Icon(Icons.album_rounded,
-                color: AuvorynColors.champagne, size: 27),
+            SongArtwork(
+              artworkPath: song.artworkPath,
+              title: song.title,
+              size: 54,
             ),
             const SizedBox(width: 13),
             Expanded(child: Column(
