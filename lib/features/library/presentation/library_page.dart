@@ -27,7 +27,8 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     // Position ticks must not rebuild/filter the entire collection.
     ref.watch(
       musicProvider.select(
-        (m) => (m.songs, m.playlists, m.loading, m.restoring, m.error),
+        (m) => (m.songs, m.playlists, m.loading, m.restoring, m.error,
+            m.importDone, m.importTotal, m.importDuplicates, m.importLabel),
       ),
     );
     final music = ref.read(musicProvider);
@@ -100,12 +101,16 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                       if (!context.mounted) {
                         return;
                       }
+                      final duplicates = ref.read(musicProvider).importDuplicates;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
                             count > 0
-                                ? 'Imported $count song${count == 1 ? '' : 's'} for offline listening.'
-                                : 'No new music was imported. Check for duplicates or try again.',
+                                ? 'Imported $count song${count == 1 ? '' : 's'}. '
+                                  '${duplicates > 0 ? '$duplicates duplicate(s) skipped.' : 'Ready offline.'}'
+                                : duplicates > 0
+                                    ? '$duplicates duplicate(s) already in your library.'
+                                    : 'No new tracks imported. See errors or choose files again.',
                           ),
                         ),
                       );
@@ -117,7 +122,11 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.add_rounded),
-              label: Text(music.loading ? 'IMPORTING…' : 'IMPORT MUSIC'),
+              label: Text(music.loading
+                  ? (music.importTotal > 0
+                      ? 'IMPORTING ${music.importDone}/${music.importTotal}'
+                      : 'IMPORTING…')
+                  : 'IMPORT MUSIC'),
               style: FilledButton.styleFrom(
                 minimumSize: const Size(0, 53),
                 backgroundColor: AuvorynColors.champagne,
@@ -128,6 +137,17 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
               ),
             ),
           ),
+          if (music.loading && music.importTotal > 0) ...[
+            const SizedBox(height: 10),
+            LinearProgressIndicator(
+              value: music.importDone / music.importTotal,
+              minHeight: 3,
+            ),
+            if (music.importLabel.isNotEmpty)
+              Text('Processing: ${music.importLabel}',
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: AuvorynColors.mist, fontSize: 11)),
+          ],
           if (music.error != null)
             Padding(
               padding: const EdgeInsets.only(top: 12),
