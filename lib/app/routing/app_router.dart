@@ -6,6 +6,7 @@ import 'package:auvoryn/features/library/presentation/playlist_detail_page.dart'
 import 'package:auvoryn/features/music/presentation/now_playing_page.dart';
 import 'package:auvoryn/features/memories/presentation/memories_page.dart';
 import 'package:auvoryn/features/settings/presentation/settings_page.dart';
+import 'package:auvoryn/features/settings/presentation/about_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -62,6 +63,10 @@ final appRouter = GoRouter(
           );
         },
       ),
+    ),
+    GoRoute(
+      path: '/about',
+      builder: (context, state) => const AboutPage(),
     ),
     GoRoute(
       path: '/settings',

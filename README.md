@@ -4,16 +4,23 @@
 
 AUVORYN is an immersive, personal, **offline-first** music listening room built with Flutter and Riverpod. The first room is **Midnight Apartment**.
 
-## Current progress — M2 Offline Music (0.2.0)
+## Current progress — M7 Release QA (0.7.0 beta)
 
-- Actual local file picker and import into persistent app-private storage
-- SQLite song library, deduplicated imports, favorites and playlists
-- Real `just_audio` playback, queue, seek, skip, shuffle and repeat
-- `just_audio_background` media session for Android notifications and lock screen (native Android manifest configuration required)
-- Global mini-player and Now Playing screen, while room and mood settings remain functional
-- Queue/position restoration (paused after relaunch)
+- Offline music import, local SQLite library, playlists, favorites and restored queues
+- Embedded tags and local album covers with vinyl/cover artwork in the player
+- Android media notifications, seek, shuffle, repeat and background playback
+- Interactive Midnight Apartment, room personalization, lighting and offline ambience
+- On-device listening history, privacy controls and real playback-derived statistics
+- Release-oriented Android CI build checks, a non-destructive Windows QA script and an in-app **Privacy & storage** page
 
-The visual room is 2.5D; record taps open the music collection. Embedded tags/album art extraction, automated Android media scans, detailed listening statistics, realtime beat detection, and extra ambience audio are **not yet implemented**.
+**Release status:** 0.7.0 is a QA candidate, **not** a Play Store/App Store release.
+Android release signing, a permanent application ID (the generated shell may
+still use `com.example.auvoryn`), app icon, store disclosures and physical-device
+validation remain required. Do not uninstall the current version to test an
+update: uninstalling can delete app-private imported music.
+
+Read [Milestone 7 release checklist](docs/release_readiness.md) before distributing
+builds, and [local data/privacy notes](docs/privacy_and_data.md).
 
 ## First-time setup (Windows / Android)
 

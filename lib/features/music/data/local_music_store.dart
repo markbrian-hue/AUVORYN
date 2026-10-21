@@ -237,29 +237,54 @@ class LocalMusicStore {
     });
   }
 
+  /// Keep history aggregation in SQLite: a large local library should not
+  /// allocate and sort every playback record when opening Memories.
   Future<ListeningSnapshot> loadListeningSnapshot() async {
-    final rows = await _db.rawQuery('''
-      SELECT s.song_id,t.title,t.artist,s.listened_ms,s.plays,s.last_played_at
-      FROM listening_stats s JOIN tracks t ON t.id = s.song_id
-      WHERE s.listened_ms > 0 ORDER BY s.last_played_at DESC
+    final totals = (await _db.rawQuery('''
+      SELECT COALESCE(SUM(s.listened_ms), 0) AS total_ms,
+             COALESCE(SUM(s.plays), 0) AS total_plays,
+             COUNT(*) AS track_count
+      FROM listening_stats s
+      JOIN tracks t ON t.id = s.song_id
+      WHERE s.listened_ms > 0
+    ''')).first;
+    final recentRows = await _db.rawQuery('''
+      SELECT s.song_id, t.title, t.artist, s.listened_ms, s.plays,
+             s.last_played_at
+      FROM listening_stats s
+      JOIN tracks t ON t.id = s.song_id
+      WHERE s.listened_ms > 0
+      ORDER BY s.last_played_at DESC, s.song_id
+      LIMIT 30
     ''');
-    final recent = rows.map(ListeningTrack.fromRow).toList();
-    final artistTimes = <String,int>{};
-    for (final track in recent) {
-      if (track.artist.toLowerCase() != 'unknown artist') {
-        artistTimes.update(track.artist, (time) => time + track.listenedMs,
-          ifAbsent: () => track.listenedMs);
-      }
-    }
-    final rankedArtists = artistTimes.entries.toList()
-      ..sort((a,b) => b.value.compareTo(a.value));
-    final top = [...recent]..sort((a,b) => b.listenedMs.compareTo(a.listenedMs));
+    final topRows = await _db.rawQuery('''
+      SELECT s.song_id, t.title, t.artist, s.listened_ms, s.plays,
+             s.last_played_at
+      FROM listening_stats s
+      JOIN tracks t ON t.id = s.song_id
+      WHERE s.listened_ms > 0
+      ORDER BY s.listened_ms DESC, s.song_id
+      LIMIT 5
+    ''');
+    final artists = await _db.rawQuery('''
+      SELECT t.artist AS artist
+      FROM listening_stats s
+      JOIN tracks t ON t.id = s.song_id
+      WHERE s.listened_ms > 0
+        AND LOWER(TRIM(t.artist)) != 'unknown artist'
+        AND TRIM(t.artist) != ''
+      GROUP BY t.artist COLLATE NOCASE
+      ORDER BY SUM(s.listened_ms) DESC, t.artist COLLATE NOCASE
+      LIMIT 1
+    ''');
     return ListeningSnapshot(
-      totalMs: recent.fold<int>(0, (v,s) => v + s.listenedMs),
-      totalPlays: recent.fold<int>(0, (v,s) => v + s.plays),
-      tracks: recent.length, recent: recent.take(30).toList(),
-      topTracks: top.take(5).toList(),
-      topArtist: rankedArtists.isEmpty ? null : rankedArtists.first.key);
+      totalMs: (totals['total_ms'] as num).toInt(),
+      totalPlays: (totals['total_plays'] as num).toInt(),
+      tracks: (totals['track_count'] as num).toInt(),
+      recent: recentRows.map(ListeningTrack.fromRow).toList(),
+      topTracks: topRows.map(ListeningTrack.fromRow).toList(),
+      topArtist: artists.isEmpty ? null : artists.first['artist'] as String,
+    );
   }
 
   Future<void> clearListeningHistory() async {

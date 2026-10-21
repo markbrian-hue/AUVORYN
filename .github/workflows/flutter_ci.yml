@@ -1,26 +1,44 @@
 name: Flutter validation
+
 on:
   push:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  analyze-and-test:
+  analyze-test-android:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Install Flutter stable
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - name: Bootstrap generated Android platform
+      - name: Generate Android platform shell
         run: flutter create --platforms=android .
-      - name: Remove generated Flutter starter test
-        run: |
-          if grep -q 'MyApp' test/widget_test.dart 2>/dev/null; then rm test/widget_test.dart; fi
+      - name: Configure audio-service Android activity
+        shell: pwsh
+        run: ./scripts/configure_android_audio.ps1
       - name: Resolve packages
         run: flutter pub get
-      - name: Analyze
+      - name: Static analysis
         run: flutter analyze
       - name: Unit and widget tests
         run: flutter test
+      - name: Assemble Android QA APK
+        run: flutter build apk --debug --no-pub
+      - name: Verify APK exists and is nonempty
+        run: test -s build/app/outputs/flutter-apk/app-debug.apk
+      - name: Upload QA APK (debug signed, NOT for store release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: auvoryn-android-debug-qa
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 5
+          if-no-files-found: error
