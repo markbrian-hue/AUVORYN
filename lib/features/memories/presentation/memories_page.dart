@@ -11,6 +11,7 @@ class MemoriesPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(listeningSnapshotProvider);
+    final current = ref.watch(musicProvider.select((m) => m.currentSong));
     return SafeArea(child: RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(listeningSnapshotProvider);
@@ -31,6 +32,23 @@ class MemoriesPage extends ConsumerWidget {
           const SizedBox(height: 12),
           const Text('Your listening story, stored only on this device.',
             style: TextStyle(color: AuvorynColors.mist,height: 1.5)),
+          if (current != null) ...[
+            const SizedBox(height: 16),
+            Material(
+              color: AuvorynColors.raised,
+              borderRadius: BorderRadius.circular(17),
+              child: ListTile(
+                key: const Key('resume_listening'),
+                title: const Text('Resume your listening'),
+                subtitle: Text(current.title, maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                leading: const Icon(Icons.history_rounded,
+                    color: AuvorynColors.champagne),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push('/now-playing'),
+              ),
+            ),
+          ],
           const SizedBox(height: 26),
           history.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -142,12 +160,26 @@ class _StatCard extends StatelessWidget {
       Text(label,style: const TextStyle(fontSize: 10,color: AuvorynColors.mist)),
     ]));
 }
-class _TrackRow extends StatelessWidget {
+class _TrackRow extends ConsumerWidget {
   const _TrackRow(this.track,this.detail);
   final ListeningTrack track;
   final String detail;
   @override
-  Widget build(BuildContext context) => ListTile(
+  Widget build(BuildContext context, WidgetRef ref) => ListTile(
+    onTap: () async {
+      final tracks = ref.read(musicProvider).songs;
+      final matches = tracks.where((s) => s.id == track.id);
+      if (matches.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This song is no longer in your library.')),
+        );
+        return;
+      }
+      await ref.read(musicProvider.notifier).playSongs([matches.first]);
+      if (context.mounted && ref.read(musicProvider).currentSong != null) {
+        context.push('/now-playing');
+      }
+    },
     contentPadding: EdgeInsets.zero,
     leading: const Icon(Icons.album_outlined,color: AuvorynColors.champagne),
     title: Text(track.title,maxLines: 1,overflow: TextOverflow.ellipsis),
