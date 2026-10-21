@@ -670,7 +670,9 @@ class MusicController extends Notifier<MusicState> {
         try {
           if (fade) {
             for (var i = 1; i <= 15; i++) {
-              if (_disposed || !player.playing) break;
+              if (_disposed || !player.playing) {
+                break;
+              }
               _sleepGain = 1 - i / 15;
               await player.setVolume(level * _sleepGain);
               await Future<void>.delayed(const Duration(milliseconds: 130));
