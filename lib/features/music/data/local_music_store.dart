@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:auvoryn/features/music/domain/song.dart';
+import 'package:auvoryn/features/memories/domain/listening_snapshot.dart';
 import 'package:auvoryn/features/music/data/music_tag_reader.dart';
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
@@ -28,7 +29,7 @@ class LocalMusicStore {
     await artworkDir.create(recursive: true);
     final db = await openDatabase(
       p.join(support.path, 'auvoryn_music.db'),
-      version: 2,
+      version: 3,
       onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: (db, version) async {
         await db.execute('''
@@ -54,10 +55,24 @@ class LocalMusicStore {
         await db.execute('''
           CREATE TABLE app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)
         ''');
+        await db.execute('''
+          CREATE TABLE listening_stats (
+            song_id TEXT PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+            listened_ms INTEGER NOT NULL DEFAULT 0, plays INTEGER NOT NULL DEFAULT 0,
+            last_played_at INTEGER NOT NULL
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE tracks ADD COLUMN artwork_path TEXT');
+        }
+        if (oldVersion < 3) {
+          await db.execute('''CREATE TABLE listening_stats (
+            song_id TEXT PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+            listened_ms INTEGER NOT NULL DEFAULT 0, plays INTEGER NOT NULL DEFAULT 0,
+            last_played_at INTEGER NOT NULL
+          )''');
         }
       },
     );
@@ -198,6 +213,57 @@ class LocalMusicStore {
       result.add(updated);
     }
     return result;
+  }
+
+  Future<void> recordListening(String songId, int ms, {bool qualifiedPlay = false}) async {
+    if (ms <= 0 && !qualifiedPlay) return;
+    await _db.transaction((txn) async {
+      final rows = await txn.query('listening_stats',
+        columns: ['listened_ms', 'plays'],
+        where: 'song_id = ?', whereArgs: [songId], limit: 1);
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      if (rows.isEmpty) {
+        await txn.insert('listening_stats', {
+          'song_id': songId, 'listened_ms': ms,
+          'plays': qualifiedPlay ? 1 : 0, 'last_played_at': stamp,
+        }, conflictAlgorithm: ConflictAlgorithm.ignore);
+      } else {
+        await txn.update('listening_stats', {
+          'listened_ms': (rows.first['listened_ms'] as int) + ms,
+          'plays': (rows.first['plays'] as int) + (qualifiedPlay ? 1 : 0),
+          'last_played_at': stamp,
+        }, where: 'song_id = ?', whereArgs: [songId]);
+      }
+    });
+  }
+
+  Future<ListeningSnapshot> loadListeningSnapshot() async {
+    final rows = await _db.rawQuery('''
+      SELECT s.song_id,t.title,t.artist,s.listened_ms,s.plays,s.last_played_at
+      FROM listening_stats s JOIN tracks t ON t.id = s.song_id
+      WHERE s.listened_ms > 0 ORDER BY s.last_played_at DESC
+    ''');
+    final recent = rows.map(ListeningTrack.fromRow).toList();
+    final artistTimes = <String,int>{};
+    for (final track in recent) {
+      if (track.artist.toLowerCase() != 'unknown artist') {
+        artistTimes.update(track.artist, (time) => time + track.listenedMs,
+          ifAbsent: () => track.listenedMs);
+      }
+    }
+    final rankedArtists = artistTimes.entries.toList()
+      ..sort((a,b) => b.value.compareTo(a.value));
+    final top = [...recent]..sort((a,b) => b.listenedMs.compareTo(a.listenedMs));
+    return ListeningSnapshot(
+      totalMs: recent.fold<int>(0, (v,s) => v + s.listenedMs),
+      totalPlays: recent.fold<int>(0, (v,s) => v + s.plays),
+      tracks: recent.length, recent: recent.take(30).toList(),
+      topTracks: top.take(5).toList(),
+      topArtist: rankedArtists.isEmpty ? null : rankedArtists.first.key);
+  }
+
+  Future<void> clearListeningHistory() async {
+    await _db.delete('listening_stats');
   }
 
   Future<void> setFavorite(String id, bool value) async => _db.update(

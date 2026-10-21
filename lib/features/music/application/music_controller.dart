@@ -6,6 +6,8 @@ import 'package:audio_session/audio_session.dart';
 import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/features/music/data/local_music_store.dart';
+import 'package:auvoryn/features/memories/domain/listening_snapshot.dart';
+import 'package:auvoryn/features/memories/domain/listening_tracker.dart';
 import 'package:auvoryn/features/music/domain/song.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +19,8 @@ final initialMusicProvider = Provider<MusicBootstrap>((ref) =>
     const MusicBootstrap(songs: [], playlists: [], queue: SavedQueue()));
 
 final musicProvider = NotifierProvider<MusicController, MusicState>(MusicController.new);
+final listeningSnapshotProvider = FutureProvider<ListeningSnapshot>((ref) =>
+    ref.read(musicStoreProvider).loadListeningSnapshot());
 
 class MusicState {
   const MusicState({
@@ -85,6 +89,8 @@ class MusicController extends Notifier<MusicState> {
   Future<void> _saveWrites = Future<void>.value();
   Future<void> _restoration = Future<void>.value();
   DateTime _lastPositionSave = DateTime.fromMillisecondsSinceEpoch(0);
+  late final ListeningTracker _listening = ListeningTracker(_recordListening);
+  Future<void> _listeningWrites = Future<void>.value();
 
   LocalMusicStore get _store => ref.read(musicStoreProvider);
 
@@ -99,6 +105,7 @@ class MusicController extends Notifier<MusicState> {
     });
     final initial = ref.read(initialMusicProvider);
     ref.onDispose(() {
+      _listening.flush();
       _disposed = true;
       for (final subscription in _subscriptions) {
         unawaited(subscription.cancel());
@@ -122,6 +129,7 @@ class MusicController extends Notifier<MusicState> {
     await player.setVolume(ref.read(roomSettingsProvider).musicVolume);
     _subscriptions.add(player.positionStream.listen((position) {
       if (_disposed) return;
+      _sampleListening(player, position);
       state = state.copyWith(position: position);
       if (state.queueIds.isNotEmpty &&
           DateTime.now().difference(_lastPositionSave).inSeconds >= 8) {
@@ -133,7 +141,9 @@ class MusicController extends Notifier<MusicState> {
       if (!_disposed) state = state.copyWith(duration: duration ?? Duration.zero);
     }));
     _subscriptions.add(player.playerStateStream.listen((event) {
-      if (!_disposed) state = state.copyWith(playing: event.playing);
+      if (_disposed) return;
+      _sampleListening(player, player.position);
+      state = state.copyWith(playing: event.playing);
     }));
     _subscriptions.add(player.currentIndexStream.listen((index) {
       if (_disposed || index == null || state.queueIds.isEmpty) return;
@@ -144,6 +154,34 @@ class MusicController extends Notifier<MusicState> {
       if (!_disposed) state = state.copyWith(error: 'Playback error: ${error.message}');
     }));
     return player;
+  }
+
+  void _sampleListening(AudioPlayer player, Duration position) {
+    final index = player.currentIndex;
+    final ids = state.queueIds;
+    final songId = index != null && index >= 0 && index < ids.length
+      ? ids[index] : null;
+    _listening.sample(songId: songId, positionMs: position.inMilliseconds,
+      nowMs: DateTime.now().millisecondsSinceEpoch, playing: player.playing,
+      ready: player.processingState == ProcessingState.ready);
+  }
+
+  void _recordListening(ListeningCheckpoint checkpoint) {
+    _listeningWrites = _listeningWrites.catchError((Object _) {}).then((_) =>
+      _store.recordListening(checkpoint.songId, checkpoint.listenedMs,
+        qualifiedPlay: checkpoint.qualifiedPlay));
+    unawaited(_listeningWrites.then((_) {
+      if (!_disposed) ref.invalidate(listeningSnapshotProvider);
+    }).catchError((Object error) {
+      if (!_disposed) state = state.copyWith(error: 'History save failed: $error');
+    }));
+  }
+
+  Future<void> clearListeningHistory() async {
+    _listening.reset();
+    await _listeningWrites.catchError((Object _) {});
+    await _store.clearListeningHistory();
+    if (!_disposed) ref.invalidate(listeningSnapshotProvider);
   }
 
   Future<void> _restore(SavedQueue saved) async {
@@ -266,6 +304,8 @@ class MusicController extends Notifier<MusicState> {
         ? selected[startIndex].id : selected.first.id;
     final index = songs.indexWhere((s) => s.id == initialId);
     final current = index < 0 ? 0 : index;
+    _listening.flush();
+    _listening.reset();
     state = state.copyWith(
       queueIds: songs.map((s) => s.id).toList(), currentIndex: current,
       position: Duration.zero, duration: Duration.zero, clearError: true,
