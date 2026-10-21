@@ -6,11 +6,44 @@ import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/features/home_room/presentation/room_page.dart';
 import 'package:auvoryn/features/home_room/presentation/room_scene.dart';
+import 'package:auvoryn/features/scenes/data/listening_scene_store.dart';
+import 'package:auvoryn/features/scenes/application/listening_scenes_controller.dart';
+import 'package:auvoryn/features/scenes/domain/listening_scene.dart';
+import 'package:auvoryn/features/scenes/presentation/listening_scenes_sheet.dart';
+import 'package:auvoryn/features/sessions/data/session_store.dart';
+import 'package:auvoryn/features/sessions/application/listening_session_controller.dart';
+import 'package:auvoryn/features/sessions/domain/listening_session.dart';
+import 'package:auvoryn/features/sessions/presentation/listening_session_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class _PreviewSceneRepository implements ListeningSceneRepository {
+  @override
+  Future<List<ListeningScene>> load() async => const [
+    ListeningScene(
+      id: 'preview-scene',
+      name: 'Reading by the Window',
+      room: RoomSettings(
+        mood: RoomMood.lightRain,
+        lampPalette: LampPalette.amber,
+        lampBrightness: .54,
+        ambienceEnabled: true,
+      ),
+    ),
+  ];
+  @override
+  Future<void> save(List<ListeningScene> scenes) async {}
+}
+
+class _PreviewSessionRepository implements SessionRepository {
+  @override
+  Future<ListeningSession?> load() async => null;
+  @override
+  Future<void> save(ListeningSession? value) async {}
+}
 
 // Opt-in CI capture of actual Flutter output. This is not a performance benchmark
 // or a golden-image assertion, and does not change production behavior.
@@ -47,6 +80,12 @@ void main() {
             overrides: [
               initialRoomSettingsProvider.overrideWithValue(
                 const RoomSettings(reducedMotion: true),
+              ),
+              listeningSceneRepositoryProvider.overrideWithValue(
+                _PreviewSceneRepository(),
+              ),
+              sessionRepositoryProvider.overrideWithValue(
+                _PreviewSessionRepository(),
               ),
             ],
             child: MaterialApp(
@@ -90,6 +129,17 @@ void main() {
       ),
     );
     await capture('home', const RoomPage(), const Size(390, 1200));
+    await capture(
+      'listening-scenes',
+      const ListeningScenesSheet(),
+      const Size(430, 1100),
+    );
+    await capture(
+      'session-setup',
+      const ListeningSessionSheet(),
+      const Size(430, 1050),
+    );
+
     await capture(
       'midnight',
       room(const RoomSettings(reducedMotion: true)),
