@@ -22,24 +22,28 @@ class ListeningScenesState {
     this.loading = true,
     this.saving = false,
     this.error,
+    this.readFailed = false,
   });
 
   final List<ListeningScene> saved;
   final bool loading;
   final bool saving;
   final String? error;
+  final bool readFailed;
 
   ListeningScenesState copyWith({
     List<ListeningScene>? saved,
     bool? loading,
     bool? saving,
     String? error,
+    bool? readFailed,
     bool clearError = false,
   }) => ListeningScenesState(
         saved: saved ?? this.saved,
         loading: loading ?? this.loading,
         saving: saving ?? this.saving,
         error: clearError ? null : error ?? this.error,
+        readFailed: readFailed ?? this.readFailed,
       );
 }
 
@@ -64,6 +68,7 @@ class ListeningScenesController extends Notifier<ListeningScenesState> {
         // Fail closed: do not overwrite damaged stored data with empty scenes.
         state = ListeningScenesState(
           loading: false,
+          readFailed: true,
           error: 'Unable to read your saved scenes: $error',
         );
       }
@@ -71,7 +76,9 @@ class ListeningScenesController extends Notifier<ListeningScenesState> {
   }
 
   Future<bool> _commit(List<ListeningScene> scenes) async {
-    if (state.loading || state.error != null || state.saving) return false;
+    if (state.loading || state.readFailed || state.saving) {
+      return false;
+    }
     state = state.copyWith(saving: true, clearError: true);
     try {
       final operation = _writes.then(
