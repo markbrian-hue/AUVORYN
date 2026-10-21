@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/core/widgets/vinyl_artwork.dart';
 import 'package:auvoryn/features/music/application/music_controller.dart';
