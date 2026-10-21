@@ -189,19 +189,19 @@ class _ListeningSessionSheetState extends ConsumerState<ListeningSessionSheet> {
                 fontSize: 11)),
             const SizedBox(height: 10),
             Wrap(spacing: 9, runSpacing: 6, children: [
-              ChoiceChip(
-                label: const Text('Focus'),
+              _SessionPill(
+                label: 'Focus',
                 selected: _kind == SessionKind.focus,
-                onSelected: (_) => setState(() {
+                onTap: () => setState(() {
                   _kind = SessionKind.focus;
                   _minutes = 25;
                   _end = SessionEndBehavior.keepPlaying;
                 }),
               ),
-              ChoiceChip(
-                label: const Text('Fall asleep'),
+              _SessionPill(
+                label: 'Fall asleep',
                 selected: _kind == SessionKind.sleep,
-                onSelected: (_) => setState(() {
+                onTap: () => setState(() {
                   _kind = SessionKind.sleep;
                   _minutes = 20;
                   _end = SessionEndBehavior.fadeAndPause;
@@ -216,11 +216,11 @@ class _ListeningSessionSheetState extends ConsumerState<ListeningSessionSheet> {
             Wrap(spacing: 8, runSpacing: 6, children: [
               for (final value in (_kind == SessionKind.sleep
                   ? const [20, 45, 60] : const [25, 50, 90]))
-                ChoiceChip(
+                _SessionPill(
                   key: Key('session_preset_$value'),
-                  label: Text('$value min'),
+                  label: '$value min',
                   selected: _minutes == value,
-                  onSelected: (_) => setState(() => _minutes = value),
+                  onTap: () => setState(() => _minutes = value),
                 ),
             ]),
             const SizedBox(height: 12),
@@ -324,4 +324,56 @@ class _ListeningSessionSheetState extends ConsumerState<ListeningSessionSheet> {
       ),
     );
   }
+}
+
+/// Local, accessible control avoids widget-theme font fallback inconsistency
+/// observed in the rendered session QA screenshot.
+class _SessionPill extends StatelessWidget {
+  const _SessionPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: selected,
+    label: label,
+    child: Material(
+      color: selected ? AuvorynColors.raised : AuvorynColors.slate,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: selected ? AuvorynColors.champagne : AuvorynColors.raised,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (selected) ...[
+                const Icon(Icons.check_rounded,
+                    color: AuvorynColors.champagne, size: 16),
+                const SizedBox(width: 6),
+              ],
+              Text(label, style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600,
+                color: AuvorynColors.ivory,
+              )),
+            ]),
+          ),
+        ),
+      ),
+    ),
+  );
 }
