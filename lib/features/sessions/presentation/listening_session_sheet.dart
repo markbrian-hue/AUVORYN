@@ -24,7 +24,7 @@ String sessionTime(int milliseconds) {
   final hours = seconds ~/ 3600;
   final minutes = (seconds % 3600) ~/ 60;
   final remaining = seconds % 60;
-  final two = (int value) => value.toString().padLeft(2, '0');
+  String two(int value) => value.toString().padLeft(2, '0');
   return hours > 0
       ? '${two(hours)}:${two(minutes)}:${two(remaining)}'
       : '${two(minutes)}:${two(remaining)}';
@@ -162,7 +162,9 @@ class _ListeningSessionSheetState extends ConsumerState<ListeningSessionSheet> {
                 onPressed: status.busy ? null : () async {
                   final ok = await ref.read(listeningSessionProvider.notifier)
                       .togglePause();
-                  if (!ok) _notify('Unable to update session.');
+                  if (!ok) {
+                    _notify('Unable to update session.');
+                  }
                 },
                 icon: Icon(active.paused ? Icons.play_arrow_rounded :
                     Icons.pause_rounded),
@@ -174,7 +176,9 @@ class _ListeningSessionSheetState extends ConsumerState<ListeningSessionSheet> {
                 onPressed: status.busy ? null : () async {
                   final ok = await ref.read(listeningSessionProvider.notifier)
                       .cancel();
-                  if (!ok) _notify('Unable to cancel session.');
+                  if (!ok) {
+                    _notify('Unable to cancel session.');
+                  }
                 },
                 child: const Text('Cancel'),
               )),
