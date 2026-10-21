@@ -53,7 +53,7 @@ class _RoomSceneState extends State<RoomScene>
     super.didChangeDependencies();
     final platformReduced = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     _reduceMotion = widget.settings.reducedMotion || platformReduced;
-    _tickerEnabled = TickerMode.of(context);
+    _tickerEnabled = TickerMode.valuesOf(context).enabled;
     _syncMotion();
   }
 
