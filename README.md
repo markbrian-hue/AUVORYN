@@ -49,3 +49,18 @@ Tap any song for the full player. Use its action menu to favorite it or add it t
 **Status:** Source changes have not been compiled or tested on a device in the AI execution environment. Follow validation instructions before declaring M2 done.
 
 See `docs/milestone_2.md`, `docs/architecture.md`, and `docs/roadmap.md` for implementation and acceptance requirements.
+
+## Android build recovery: file_picker 13.1
+
+If an older checkout fails with `GeneratedPluginRegistrant.java: cannot find symbol FilePickerPlugin`, the native Android file picker version is incompatible with your Android Gradle setup. AUVORYN uses `file_picker: ^13.1.0` (federated plugin) and the updated list-returning picker API. Upgrade your local dependency lockfile; do **not** hand-edit the generated plugin registrant.
+
+Run from the AUVORYN project root in PowerShell:
+
+```powershell
+git pull origin main
+flutter clean
+flutter pub get
+flutter run
+```
+
+On the first Android native setup, ensure the existing `scripts/configure_android_audio.ps1` script has been run. If the build still references the old class, close the emulator app and try `flutter pub upgrade file_picker` followed by `flutter clean` and `flutter run`. Inspect `flutter doctor -v` and the first underlying Gradle error before making changes to Android Gradle or Kotlin settings.
