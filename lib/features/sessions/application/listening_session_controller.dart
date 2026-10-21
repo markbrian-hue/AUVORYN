@@ -89,7 +89,9 @@ class ListeningSessionController extends Notifier<SessionStatus> {
   Future<void> _restore() async {
     try {
       final saved = await ref.read(sessionRepositoryProvider).load();
-      if (_disposed) return;
+      if (_disposed) {
+        return;
+      }
       state = SessionStatus(
         active: saved, restoring: false,
         remainingMs: saved?.remainingMs(_now) ?? 0,
@@ -138,7 +140,9 @@ class ListeningSessionController extends Notifier<SessionStatus> {
     state = SessionStatus(busy: true, restoring: false);
     try {
       await _persist(session);
-      if (_disposed) return false;
+      if (_disposed) {
+        return false;
+      }
       state = SessionStatus(active: session, restoring: false,
           remainingMs: duration.inMilliseconds);
       _startTicker();
@@ -158,7 +162,9 @@ class ListeningSessionController extends Notifier<SessionStatus> {
         remainingMs: old.remainingMs(_now));
     try {
       await _persist(next);
-      if (_disposed) return false;
+      if (_disposed) {
+        return false;
+      }
       state = SessionStatus(active: next, restoring: false,
           remainingMs: next.remainingMs(_now));
       _tick();
@@ -177,7 +183,9 @@ class ListeningSessionController extends Notifier<SessionStatus> {
     state = SessionStatus(active: old, restoring: false, busy: true);
     try {
       await _persist(null);
-      if (_disposed) return false;
+      if (_disposed) {
+        return false;
+      }
       _ticker?.cancel();
       state = const SessionStatus(restoring: false);
       // Cancel is intentionally NOT a command to pause or start music.
@@ -204,7 +212,9 @@ class ListeningSessionController extends Notifier<SessionStatus> {
   }
 
   Future<void> _complete(ListeningSession session) async {
-    if (_completing) return;
+    if (_completing) {
+      return;
+    }
     _completing = true;
     _ticker?.cancel();
     // A restored, long-expired deadline pauses immediately; a live deadline
