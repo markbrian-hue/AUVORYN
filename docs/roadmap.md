@@ -1,5 +1,11 @@
 # AUVORYN — Milestone roadmap
 
+> Current source: **M7 QA candidate, 0.7.0**. Milestones 1–6 are implemented
+> in source and have user-confirmed functionality on an Android emulator.
+> M7 adds Android build checks, local data disclosure, and release QA
+> documentation. Physical-device performance, audio interruptions, release
+> signing, unique application ID, and store approval are still pending.
+
 ## M1 · Foundation — source produced, runtime validation pending
 
 Project structure, Riverpod, local settings, GoRouter nav, visual tokens, original Midnight Apartment scene, functional mood/lamp settings, honest empty states and authored test suite. **Blocked from build validation** by absent Flutter/Dart SDK in authoring environment.
@@ -31,9 +37,18 @@ Offline licensed ambience sounds, weather presets/light polish, separate audio m
 
 On-device playback-progress history, real listening statistics and clearing controls, three offline window views. Future: optional song notes and genuine audio-energy visualization.
 
-## M7 · Release QA
+## M7 · Release QA (in progress)
 
-End-to-end tests, permission matrix by OS version, background audio/interruptions, frame/memory/battery profiling, localization checks, release signing, license review.
+- [x] Add CI Android APK build gate and a local validation script.
+- [x] Document privacy, local storage and release blockers.
+- [x] Bound listening-history summaries to avoid unbounded Dart allocations.
+- [x] Guard playlist selection when a deleted playlist is still displayed.
+- [ ] Run Android build, all tests, and device QA on this candidate.
+- [ ] Verify headset/Bluetooth interruptions, background playback, memory,
+  battery and reduced motion on real hardware.
+- [ ] Choose permanent Android/iOS application identifiers, set app icons,
+  configure **private** release signing and complete store requirements.
+See [release_readiness.md](release_readiness.md).
 
 
 ## M5 progress — 0.5.0
