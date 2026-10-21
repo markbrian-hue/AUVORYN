@@ -766,6 +766,93 @@ class MusicController extends Notifier<MusicState> {
     }
   });
 
+  /// Native queue operations retain the current audio source and progress.
+  /// Editing is disabled while shuffle is on because the effective native
+  /// playback order no longer matches the visible queue order.
+  Future<void> moveQueuedTrack(int from, int to) => _transport(() async {
+    final player = _player;
+    final ids = List<String>.of(state.queueIds);
+    if (player == null || state.shuffle ||
+        from < 0 || from >= ids.length || to < 0 ||
+        to >= ids.length || from == to) return;
+    _changingQueue = true;
+    try {
+      await player.moveAudioSource(from, to);
+      final id = ids.removeAt(from);
+      ids.insert(to, id);
+      if (!_disposed) {
+        state = state.copyWith(
+          queueIds: ids,
+          currentIndex: player.currentIndex ?? ids.indexOf(
+            state.currentSong?.id ?? ''),
+        );
+        _persistQueue();
+      }
+    } finally {
+      _changingQueue = false;
+    }
+  });
+
+  Future<void> playNextInQueue(Song song) => _transport(() async {
+    final player = _player;
+    if (player == null || state.shuffle || state.queueIds.isEmpty ||
+        !state.songs.any((s) => s.id == song.id)) return;
+    if (!await File(song.path).exists()) {
+      if (!_disposed) state = state.copyWith(
+        error: 'This track is missing. Try reimporting it.');
+      return;
+    }
+    final ids = List<String>.of(state.queueIds);
+    final currentId = state.currentSong?.id;
+    if (currentId == song.id) return;
+    final oldIndex = ids.indexOf(song.id);
+    final target = oldIndex >= 0 && oldIndex < state.currentIndex
+        ? state.currentIndex : state.currentIndex + 1;
+    _changingQueue = true;
+    try {
+      if (oldIndex >= 0) {
+        if (oldIndex == target) return;
+        await player.moveAudioSource(oldIndex, target);
+        ids.removeAt(oldIndex);
+        ids.insert(target, song.id);
+      } else {
+        await player.insertAudioSource(target, _sources([song]).first);
+        ids.insert(target, song.id);
+      }
+      if (!_disposed) {
+        state = state.copyWith(
+          queueIds: ids,
+          currentIndex: player.currentIndex ?? ids.indexOf(currentId),
+        );
+        _persistQueue();
+      }
+    } finally {
+      _changingQueue = false;
+    }
+  });
+
+  Future<void> removeQueuedTrack(int index) => _transport(() async {
+    final player = _player;
+    final ids = List<String>.of(state.queueIds);
+    if (player == null || state.shuffle || index < 0 ||
+        index >= ids.length || index == state.currentIndex) return;
+    final currentId = state.currentSong?.id;
+    _changingQueue = true;
+    try {
+      await player.removeAudioSourceAt(index);
+      ids.removeAt(index);
+      if (!_disposed) {
+        state = state.copyWith(
+          queueIds: ids,
+          currentIndex: player.currentIndex ?? ids.indexOf(currentId),
+        );
+        _persistQueue();
+      }
+    } finally {
+      _changingQueue = false;
+    }
+  });
+
   Future<void> toggleShuffle() => _transport(() async {
     final player = await _audio();
     final shuffle = !state.shuffle;
