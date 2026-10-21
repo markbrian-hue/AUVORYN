@@ -1,6 +1,8 @@
 import 'package:auvoryn/app/app.dart';
 import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
+import 'package:auvoryn/features/music/application/music_controller.dart';
+import 'package:auvoryn/features/memories/domain/listening_snapshot.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +20,9 @@ void main() {
       ProviderScope(
         overrides: [
           initialRoomSettingsProvider.overrideWithValue(const RoomSettings()),
+          listeningSnapshotProvider.overrideWith((ref) async =>
+              const ListeningSnapshot(totalMs: 0, totalPlays: 0,
+                tracks: 0, recent: [], topTracks: [], topArtist: null)),
         ],
         child: const AuvorynApp(),
       ),

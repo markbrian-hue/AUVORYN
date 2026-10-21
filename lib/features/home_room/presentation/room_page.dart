@@ -2,6 +2,7 @@ import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/core/widgets/auvoryn_logo.dart';
 import 'package:auvoryn/features/atmosphere/presentation/atmosphere_sheet.dart';
+import 'package:auvoryn/features/customization/presentation/window_view_sheet.dart';
 import 'package:auvoryn/features/home_room/presentation/room_scene.dart';
 import 'package:auvoryn/features/music/application/music_controller.dart';
 import 'package:flutter/material.dart';
@@ -109,6 +110,15 @@ class RoomPage extends ConsumerWidget {
                         style: TextStyle(color: AuvorynColors.mist, fontSize: 11),
                       )),
                     ]),
+                  ),
+                  const SizedBox(height: 11),
+                  Align(alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      key: const Key('customize_window'),
+                      onPressed: () => showWindowViewSheet(context),
+                      icon: const Icon(Icons.wallpaper_outlined,size: 19),
+                      label: Text('View: ${settings.windowView.title}'),
+                    ),
                   ),
                   if (currentTitle != null) ...[
                     const SizedBox(height: 17),

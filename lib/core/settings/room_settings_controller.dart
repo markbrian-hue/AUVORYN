@@ -26,6 +26,9 @@ class RoomSettingsController extends Notifier<RoomSettings> {
 
   Future<bool> setLamp(bool value) => _update(state.copyWith(lampOn: value));
 
+  Future<bool> setWindowView(WindowView view) =>
+    _update(state.copyWith(windowView: view));
+
   Future<bool> setReducedMotion(bool value) =>
       _update(state.copyWith(reducedMotion: value));
 

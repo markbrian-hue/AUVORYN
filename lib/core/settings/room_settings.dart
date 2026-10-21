@@ -39,6 +39,20 @@ enum RoomMood {
       };
 }
 
+enum WindowView {
+  skyline, mountain, coast;
+  String get title => switch(this) {
+    skyline => 'City skyline',
+    mountain => 'Mountain retreat',
+    coast => 'Coastal night',
+  };
+  String get description => switch(this) {
+    skyline => 'Windows above the sleeping city',
+    mountain => 'A peaceful ridge beneath the stars',
+    coast => 'The last lights along the water',
+  };
+}
+
 enum LampPalette {
   amber,
   rose,
@@ -61,6 +75,7 @@ class RoomSettings {
     this.musicVolume = 1.0,
     this.lampPalette = LampPalette.amber,
     this.lampBrightness = 0.8,
+    this.windowView = WindowView.skyline,
   });
 
   final RoomMood mood;
@@ -71,6 +86,7 @@ class RoomSettings {
   final double musicVolume;
   final LampPalette lampPalette;
   final double lampBrightness;
+  final WindowView windowView;
 
   RoomSettings copyWith({
     RoomMood? mood,
@@ -81,6 +97,7 @@ class RoomSettings {
     double? musicVolume,
     LampPalette? lampPalette,
     double? lampBrightness,
+    WindowView? windowView,
   }) => RoomSettings(
         mood: mood ?? this.mood,
         lampOn: lampOn ?? this.lampOn,
@@ -90,6 +107,7 @@ class RoomSettings {
         musicVolume: (musicVolume ?? this.musicVolume).clamp(0.0, 1.0),
         lampPalette: lampPalette ?? this.lampPalette,
         lampBrightness: (lampBrightness ?? this.lampBrightness).clamp(0.0, 1.0),
+        windowView: windowView ?? this.windowView,
       );
 
   Map<String, Object> toMap() => {
@@ -101,6 +119,7 @@ class RoomSettings {
         'musicVolume': musicVolume,
         'lampPalette': lampPalette.name,
         'lampBrightness': lampBrightness,
+        'windowView': windowView.name,
       };
 
   static double _volume(Object? raw, double fallback) {
@@ -119,6 +138,9 @@ class RoomSettings {
       (value) => value.name == values['lampPalette'],
       orElse: () => LampPalette.amber,
     );
+    final view = WindowView.values.firstWhere(
+      (candidate) => candidate.name == values['windowView'],
+      orElse: () => WindowView.skyline);
     return RoomSettings(
       mood: mood,
       lampOn: values['lampOn'] is bool ? values['lampOn']! as bool : true,
@@ -132,6 +154,7 @@ class RoomSettings {
       musicVolume: _volume(values['musicVolume'], 1.0),
       lampPalette: palette,
       lampBrightness: _volume(values['lampBrightness'], 0.8),
+      windowView: view,
     );
   }
 }
