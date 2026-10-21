@@ -190,15 +190,15 @@ class MusicController extends Notifier<MusicState> {
     state = state.copyWith(loading: true, clearError: true);
     var count = 0;
     try {
-      final result = await FilePicker.pickFiles(
+      // file_picker 12+ returns a list directly; cancellation yields an empty list.
+      final selectedFiles = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: LocalMusicStore.supportedExtensions.toList(),
-        allowMultiple: true,
       );
-      if (result == null) return 0;
+      if (selectedFiles.isEmpty) return 0;
       final failures = <String>[];
       final next = List<Song>.from(state.songs);
-      for (final file in result.files) {
+      for (final file in selectedFiles) {
         try {
           final song = await _store.importFile(file);
           if (song == null) continue;
