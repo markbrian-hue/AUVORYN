@@ -1,6 +1,7 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/features/atmosphere/presentation/atmosphere_sheet.dart';
+import 'package:auvoryn/features/customization/presentation/window_view_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,6 +51,13 @@ class SettingsPage extends ConsumerWidget {
               onTap: () => showAtmosphereSheet(context),
             ),
             const SizedBox(height: 11),
+            _SettingsTile(
+              title: 'Window view',
+              subtitle: settings.windowView.title,
+              icon: Icons.wallpaper_outlined,
+              onTap: () => showWindowViewSheet(context),
+            ),
+            const SizedBox(height: 11),
             _SettingsSwitch(
               title: 'Desk lamp',
               subtitle: '${settings.lampPalette.title} room lighting',
@@ -84,7 +92,7 @@ class SettingsPage extends ConsumerWidget {
             const SizedBox(height: 40),
             const Center(
               child: Text(
-                'AUVORYN  •  ATMOSPHERE 0.5.0',
+                'AUVORYN  •  PERSONAL 0.6.0',
                 style: TextStyle(
                   fontSize: 10,
                   letterSpacing: 1.5,

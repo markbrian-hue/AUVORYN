@@ -68,3 +68,9 @@ See [Milestone 4](docs/milestone_4.md) for device QA and limitations.
 Room > Window / Atmosphere adds optional offline rain, distant thunder and city-night loops; separate sound and music volume sliders; and Amber/Rose/Moonlight lighting with adjustable lamp brightness. Sounds are **original generated Ogg/Vorbis assets** bundled within the app; no account, internet, microphone or location permission is needed. Enable ambience explicitly to hear it (off by default). `audioplayers` runs the secondary ambience channel without taking focus; the original single `just_audio_background` music player keeps lock-screen controls.
 
 See `docs/milestone_5.md` for acceptance tests and platform-specific caveats. After pulling M5, run `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter run`. Do not uninstall the app just to update dependencies or you may lose app-private music.
+
+## Milestone 6 — Personalization & Listening Memories (0.6.0)
+
+Memories now shows local listening totals based on actual player position changes, qualifying plays (10 seconds of progress), recent tracks, and favorites based on listen time. Existing listening before this update is not reconstructed. Users can clear only listening-history stats without deleting imported songs or playlists.
+
+Room / Settings → Window view offers a skyline, mountains, or coast, all locally rendered and remembered. No cloud services. History is best-effort when the device suspends Dart callbacks; see `docs/milestone_6.md`.

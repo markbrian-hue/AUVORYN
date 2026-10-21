@@ -27,9 +27,9 @@ Now Playing, mini-player, editorial library layout, animated transitions, deep l
 
 Offline licensed ambience sounds, weather presets/light polish, separate audio mixing controls, performance settings.
 
-## M6 · Personalization & memories
+## M6 · Personalization & memories — source implemented; device QA pending
 
-Additional room configurations, real play-event histories, opt-in local stats, legitimate audio-energy visualization.
+On-device playback-progress history, real listening statistics and clearing controls, three offline window views. Future: optional song notes and genuine audio-energy visualization.
 
 ## M7 · Release QA
 

@@ -27,6 +27,18 @@ void main() {
     expect(restored.mood, settings.mood);
     expect(restored.lampOn, settings.lampOn);
     expect(restored.reducedMotion, settings.reducedMotion);
+    expect(restored.windowView, settings.windowView);
+  });
+
+  test('window view persists and old saved maps safely default', () {
+    const coastal = RoomSettings(windowView: WindowView.coast);
+    expect(RoomSettings.fromMap(coastal.toMap()).windowView,WindowView.coast);
+    expect(coastal.copyWith(windowView: WindowView.mountain).windowView,
+      WindowView.mountain);
+    expect(RoomSettings.fromMap({'mood':'quietMidnight'}).windowView,
+      WindowView.skyline);
+    expect(RoomSettings.fromMap({'windowView':'unknown'}).windowView,
+      WindowView.skyline);
   });
 
   test('unknown saved mood falls back safely', () {

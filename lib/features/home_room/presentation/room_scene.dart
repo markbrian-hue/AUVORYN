@@ -106,7 +106,7 @@ class _RoomSceneState extends State<RoomScene>
               child: AnimatedSwitcher(
                 duration: _reduceMotion ? Duration.zero : AuvorynMotion.atmosphere,
                 child: SizedBox.expand(
-                  key: ValueKey('${widget.settings.mood.name}-${widget.settings.lampOn}-${widget.settings.lampPalette.name}'),
+                  key: ValueKey('${widget.settings.mood.name}-${widget.settings.lampOn}-${widget.settings.lampPalette.name}-${widget.settings.windowView.name}'),
                   child: CustomPaint(painter: _MidnightPainter(widget.settings)),
                 ),
               ),
@@ -379,6 +379,7 @@ class _MidnightPainter extends CustomPainter {
       );
     }
 
+    if (settings.windowView == WindowView.skyline) {
     for (var i = 0; i < 17; i++) {
       final x = 62.0 + i * 17;
       final h = 72.0 + (i * 29 % 95);
@@ -397,6 +398,34 @@ class _MidnightPainter extends CustomPainter {
       }
     }
 
+    } else if (settings.windowView == WindowView.mountain) {
+      final farRidge = Path()..moveTo(62,331)..lineTo(62,249)
+        ..lineTo(111,206)..lineTo(158,262)..lineTo(209,182)
+        ..lineTo(263,248)..lineTo(301,217)..lineTo(326,256)
+        ..lineTo(326,331)..close();
+      canvas.drawPath(farRidge,Paint()..color = const Color(0xFF344059));
+      final nearRidge = Path()..moveTo(62,331)..lineTo(62,291)
+        ..lineTo(127,247)..lineTo(172,293)..lineTo(244,237)
+        ..lineTo(326,273)..lineTo(326,331)..close();
+      canvas.drawPath(nearRidge,Paint()..color = const Color(0xFF1B2A40));
+    } else {
+      canvas.drawRect(const Rect.fromLTWH(62,238,264,93),
+        Paint()..shader = const LinearGradient(
+          begin: Alignment.topCenter,end: Alignment.bottomCenter,
+          colors:[Color(0xFF465771),Color(0xFF192B43)])
+          .createShader(const Rect.fromLTWH(62,238,264,93)));
+      canvas.drawLine(const Offset(62,238),const Offset(326,238),
+        Paint()..color = const Color(0x888DA4BB)..strokeWidth=1.2);
+      for (var i=0;i<14;i++) {
+        final x=70.0+(i*47%244),y=256.0+(i*19%66);
+        canvas.drawLine(Offset(x,y),Offset(x+12,y),
+          Paint()..color = const Color(0x446E8DAD)..strokeWidth=.8);
+      }
+      canvas.drawRect(const Rect.fromLTWH(279,231,41,6),
+        Paint()..color=const Color(0xFF282D3A));
+      canvas.drawCircle(const Offset(300,228),3,
+        Paint()..color=const Color(0xFFE2BD87));
+    }
     canvas.restore();
 
     // Frames and subtle reflective strokes.
@@ -543,5 +572,6 @@ class _MidnightPainter extends CustomPainter {
       oldDelegate.settings.mood != settings.mood ||
       oldDelegate.settings.lampOn != settings.lampOn ||
       oldDelegate.settings.lampPalette != settings.lampPalette ||
-      oldDelegate.settings.lampBrightness != settings.lampBrightness;
+      oldDelegate.settings.lampBrightness != settings.lampBrightness ||
+      oldDelegate.settings.windowView != settings.windowView;
 }
