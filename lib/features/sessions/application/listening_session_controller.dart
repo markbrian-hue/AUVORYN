@@ -101,8 +101,10 @@ class ListeningSessionController extends Notifier<SessionStatus> {
         _tick();
       }
     } catch (error) {
-      if (!_disposed) state = SessionStatus(
+      if (!_disposed) {
+        state = SessionStatus(
         restoring: false, error: 'Could not restore session: $error');
+      }
     }
   }
 
@@ -126,7 +128,9 @@ class ListeningSessionController extends Notifier<SessionStatus> {
   }) async {
     if (state.restoring || state.active != null || state.busy ||
         state.error != null || duration.inMinutes < 1 ||
-        duration.inMinutes > 240) return false;
+        duration.inMinutes > 240) {
+      return false;
+    }
     final now = _now;
     final session = ListeningSession(
       id: const Uuid().v4(),
@@ -148,15 +152,19 @@ class ListeningSessionController extends Notifier<SessionStatus> {
       _startTicker();
       return true;
     } catch (error) {
-      if (!_disposed) state = SessionStatus(restoring: false,
+      if (!_disposed) {
+        state = SessionStatus(restoring: false,
           error: 'Could not start session: $error');
+      }
       return false;
     }
   }
 
   Future<bool> togglePause() async {
     final old = state.active;
-    if (old == null || state.busy) return false;
+    if (old == null || state.busy) {
+      return false;
+    }
     final next = old.paused ? old.resume(_now) : old.pause(_now);
     state = SessionStatus(active: old, restoring: false, busy: true,
         remainingMs: old.remainingMs(_now));
@@ -170,9 +178,11 @@ class ListeningSessionController extends Notifier<SessionStatus> {
       _tick();
       return true;
     } catch (error) {
-      if (!_disposed) state = SessionStatus(active: old, restoring: false,
+      if (!_disposed) {
+        state = SessionStatus(active: old, restoring: false,
           remainingMs: old.remainingMs(_now),
           error: 'Unable to update session: $error');
+      }
       return false;
     }
   }
@@ -191,17 +201,23 @@ class ListeningSessionController extends Notifier<SessionStatus> {
       // Cancel is intentionally NOT a command to pause or start music.
       return true;
     } catch (error) {
-      if (!_disposed) state = SessionStatus(active: old, restoring: false,
+      if (!_disposed) {
+        state = SessionStatus(active: old, restoring: false,
           remainingMs: old.remainingMs(_now),
           error: 'Unable to cancel session: $error');
+      }
       return false;
     }
   }
 
   void _tick() {
-    if (_disposed || state.busy || state.restoring || _completing) return;
+    if (_disposed || state.busy || state.restoring || _completing) {
+      return;
+    }
     final session = state.active;
-    if (session == null) return;
+    if (session == null) {
+      return;
+    }
     final remaining = session.remainingMs(_now);
     if (remaining <= 0 && !session.paused) {
       unawaited(_complete(session));
