@@ -49,7 +49,15 @@ class RoomPage extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Expanded(child: AuvorynLogo()),
+                      const Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: AuvorynLogo(),
+                          ),
+                        ),
+                      ),
                       IconButton(
                         tooltip: 'Settings',
                         onPressed: () => context.push('/settings'),
@@ -234,13 +242,17 @@ class RoomPage extends ConsumerWidget {
                       const Expanded(
                         child: Divider(color: AuvorynColors.raised),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Text(
-                          'Sound, somewhere yours.',
-                          style: AppTheme.editorial(
-                            size: 20,
-                            color: AuvorynColors.mist,
+                      Flexible(
+                        flex: 8,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Text(
+                            'Sound, somewhere yours.',
+                            textAlign: TextAlign.center,
+                            style: AppTheme.editorial(
+                              size: 20,
+                              color: AuvorynColors.mist,
+                            ),
                           ),
                         ),
                       ),
@@ -296,7 +308,9 @@ class _RoomAction extends StatelessWidget {
                 color: selected ? AuvorynColors.champagne : AuvorynColors.mist,
               ),
               const SizedBox(width: 7),
-              Text(label, style: const TextStyle(fontSize: 11)),
+              Flexible(
+                child: Text(label, style: const TextStyle(fontSize: 11)),
+              ),
             ],
           ),
         ),

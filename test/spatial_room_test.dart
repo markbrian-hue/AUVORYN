@@ -194,6 +194,8 @@ void main() {
         250,
         scrollable: find.byType(Scrollable).first,
       );
+      await Scrollable.ensureVisible(tester.element(preset), alignment: .5);
+      await tester.pumpAndSettle();
       await tester.tap(preset);
       await tester.pumpAndSettle();
       expect(store.last?.mood, RoomMood.warmSunset);

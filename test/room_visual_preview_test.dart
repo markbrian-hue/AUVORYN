@@ -19,6 +19,9 @@ void main() {
     tester,
   ) async {
     await tester.runAsync(() async {
+      await (FontLoader(
+        'MaterialIcons',
+      )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
       for (final entry in {
         'Manrope': 'Manrope-Variable.ttf',
         'InstrumentSerif': 'InstrumentSerif-Regular.ttf',
