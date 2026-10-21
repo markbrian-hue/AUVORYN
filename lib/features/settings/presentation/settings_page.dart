@@ -45,14 +45,14 @@ class SettingsPage extends ConsumerWidget {
             const SizedBox(height: 12),
             _SettingsTile(
               title: 'Atmosphere',
-              subtitle: settings.mood.title,
+              subtitle: '${settings.mood.title} · ${settings.ambienceEnabled ? 'sound on' : 'sound off'}',
               icon: Icons.nights_stay_outlined,
               onTap: () => showAtmosphereSheet(context),
             ),
             const SizedBox(height: 11),
             _SettingsSwitch(
               title: 'Desk lamp',
-              subtitle: 'Warm room lighting',
+              subtitle: '${settings.lampPalette.title} room lighting',
               icon: Icons.lightbulb_outline,
               value: settings.lampOn,
               onChanged: (value) => update(
@@ -84,7 +84,7 @@ class SettingsPage extends ConsumerWidget {
             const SizedBox(height: 40),
             const Center(
               child: Text(
-                'AUVORYN  •  FOUNDATION 0.1.0',
+                'AUVORYN  •  ATMOSPHERE 0.5.0',
                 style: TextStyle(
                   fontSize: 10,
                   letterSpacing: 1.5,

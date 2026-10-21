@@ -106,7 +106,7 @@ class _RoomSceneState extends State<RoomScene>
               child: AnimatedSwitcher(
                 duration: _reduceMotion ? Duration.zero : AuvorynMotion.atmosphere,
                 child: SizedBox.expand(
-                  key: ValueKey('${widget.settings.mood.name}-${widget.settings.lampOn}'),
+                  key: ValueKey('${widget.settings.mood.name}-${widget.settings.lampOn}-${widget.settings.lampPalette.name}'),
                   child: CustomPaint(painter: _MidnightPainter(widget.settings)),
                 ),
               ),
@@ -480,15 +480,22 @@ class _MidnightPainter extends CustomPainter {
       canvas.drawCircle(Offset(x + 15.5, 324), 4, Paint()..color = const Color(0xFF554D4C));
     }
 
-    // Lamp base, stem, conical shade, and a practical lighting state.
-    if (settings.lampOn) {
+    // User-selected lighting palette and brightness alter real painted light,
+    // not merely decorative labels or disabled controls.
+    final light = switch (settings.lampPalette) {
+      LampPalette.amber => const Color(0xFFF5C995),
+      LampPalette.rose => const Color(0xFFFFA9B6),
+      LampPalette.moonlight => const Color(0xFFABC7FF),
+    };
+    if (settings.lampOn && settings.lampBrightness > 0) {
       canvas.drawCircle(
         const Offset(326, 291),
         83,
         Paint()
-          ..shader = const RadialGradient(
-            colors: [Color(0x65F5C995), Color(0x00F5C995)],
-          ).createShader(const Rect.fromLTWH(243, 208, 166, 166)),
+          ..shader = RadialGradient(colors: [
+            light.withValues(alpha: .43 * settings.lampBrightness),
+            light.withValues(alpha: 0),
+          ]).createShader(const Rect.fromLTWH(243, 208, 166, 166)),
       );
     }
     canvas.drawLine(
@@ -507,7 +514,7 @@ class _MidnightPainter extends CustomPainter {
       ..close();
     canvas.drawPath(
       shade,
-      Paint()..color = settings.lampOn ? const Color(0xFFE1BC8A) : const Color(0xFF67594D),
+      Paint()..color = settings.lampOn ? light.withValues(alpha: .38 + .62 * settings.lampBrightness) : const Color(0xFF67594D),
     );
 
     // Soft vignette focuses the room on the window and audio desk.
@@ -534,5 +541,7 @@ class _MidnightPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MidnightPainter oldDelegate) =>
       oldDelegate.settings.mood != settings.mood ||
-      oldDelegate.settings.lampOn != settings.lampOn;
+      oldDelegate.settings.lampOn != settings.lampOn ||
+      oldDelegate.settings.lampPalette != settings.lampPalette ||
+      oldDelegate.settings.lampBrightness != settings.lampBrightness;
 }

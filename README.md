@@ -50,17 +50,21 @@ Tap any song for the full player. Use its action menu to favorite it or add it t
 
 See `docs/milestone_2.md`, `docs/architecture.md`, and `docs/roadmap.md` for implementation and acceptance requirements.
 
-## Android build recovery: file_picker 13.1
+If you previously generated platform files, the Android setup script preserves and moves Flutter's obsolete `test/widget_test.dart` (if it refers to `MyApp`) outside the test discovery pattern.
 
-If an older checkout fails with `GeneratedPluginRegistrant.java: cannot find symbol FilePickerPlugin`, the native Android file picker version is incompatible with your Android Gradle setup. AUVORYN uses `file_picker: ^13.1.0` (federated plugin) and the updated list-returning picker API. Upgrade your local dependency lockfile; do **not** hand-edit the generated plugin registrant.
+## Milestone 4 · Immersive room (0.4.0)
 
-Run from the AUVORYN project root in PowerShell:
+Midnight Apartment now has a play-state-driven record and stereo controls,
+animated offline rain isolated to the window, smoothly transitioning room lighting,
+and five accessible hotspots (record, speakers, lamp, window, shelf). The existing
+MusicController remains the only audio engine. Reduced-motion settings and
+background lifecycle suspend decorative animation. No external assets or
+permissions are required.
 
-```powershell
-git pull origin main
-flutter clean
-flutter pub get
-flutter run
-```
+See [Milestone 4](docs/milestone_4.md) for device QA and limitations.
 
-On the first Android native setup, ensure the existing `scripts/configure_android_audio.ps1` script has been run. If the build still references the old class, close the emulator app and try `flutter pub upgrade file_picker` followed by `flutter clean` and `flutter run`. Inspect `flutter doctor -v` and the first underlying Gradle error before making changes to Android Gradle or Kotlin settings.
+## M5 — Offline Atmosphere & Ambient Audio (0.5.0)
+
+Room > Window / Atmosphere adds optional offline rain, distant thunder and city-night loops; separate sound and music volume sliders; and Amber/Rose/Moonlight lighting with adjustable lamp brightness. Sounds are **original generated Ogg/Vorbis assets** bundled within the app; no account, internet, microphone or location permission is needed. Enable ambience explicitly to hear it (off by default). `audioplayers` runs the secondary ambience channel without taking focus; the original single `just_audio_background` music player keeps lock-screen controls.
+
+See `docs/milestone_5.md` for acceptance tests and platform-specific caveats. After pulling M5, run `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter run`. Do not uninstall the app just to update dependencies or you may lose app-private music.

@@ -34,3 +34,8 @@ Additional room configurations, real play-event histories, opt-in local stats, l
 ## M7 · Release QA
 
 End-to-end tests, permission matrix by OS version, background audio/interruptions, frame/memory/battery profiling, localization checks, release signing, license review.
+
+
+## M5 progress — 0.5.0
+
+Offline original Ogg soundscapes, independent ambient/music volume controls, persistent lamp palette/brightness and an opt-in ambient audio engine. Source integration and unit/widget tests added; Android/iOS focus, Bluetooth, background and long-session audio QA remain device acceptance gates.
