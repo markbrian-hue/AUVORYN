@@ -19,10 +19,18 @@ class LocalMusicStore {
   final Directory _musicDirectory;
   final Directory _artworkDirectory;
   static const _uuid = Uuid();
-  static const supportedExtensions = {'mp3', 'm4a', 'aac', 'wav', 'flac', 'ogg', 'opus'};
+  static const supportedExtensions = {
+    'mp3',
+    'm4a',
+    'aac',
+    'wav',
+    'flac',
+    'ogg',
+    'opus',
+  };
 
-  static Future<LocalMusicStore> open() async {
-    final support = await getApplicationSupportDirectory();
+  static Future<LocalMusicStore> open({Directory? supportDirectory}) async {
+    final support = supportDirectory ?? await getApplicationSupportDirectory();
     final musicDir = Directory(p.join(support.path, 'imported_music'));
     await musicDir.create(recursive: true);
     final artworkDir = Directory(p.join(support.path, 'album_artwork'));
@@ -81,22 +89,38 @@ class LocalMusicStore {
 
   Future<MusicBootstrap> load() async {
     final songRows = await _db.query('tracks', orderBy: 'imported_at DESC');
-    final playlistRows = await _db.query('playlists', orderBy: 'name COLLATE NOCASE');
+    final playlistRows = await _db.query(
+      'playlists',
+      orderBy: 'name COLLATE NOCASE',
+    );
     final playlists = <MusicPlaylist>[];
     for (final row in playlistRows) {
       final id = row['id'] as String;
-      final rows = await _db.query('playlist_tracks',
-        columns: ['song_id'], where: 'playlist_id = ?', whereArgs: [id], orderBy: 'position ASC');
-      playlists.add(MusicPlaylist(
-        id: id, name: row['name'] as String,
-        songIds: rows.map((e) => e['song_id'] as String).toList(),
-      ));
+      final rows = await _db.query(
+        'playlist_tracks',
+        columns: ['song_id'],
+        where: 'playlist_id = ?',
+        whereArgs: [id],
+        orderBy: 'position ASC',
+      );
+      playlists.add(
+        MusicPlaylist(
+          id: id,
+          name: row['name'] as String,
+          songIds: rows.map((e) => e['song_id'] as String).toList(),
+        ),
+      );
     }
-    final state = await _db.query('app_state', where: 'key = ?', whereArgs: ['last_queue']);
+    final state = await _db.query(
+      'app_state',
+      where: 'key = ?',
+      whereArgs: ['last_queue'],
+    );
     SavedQueue queue = const SavedQueue();
     if (state.isNotEmpty) {
       try {
-        final map = jsonDecode(state.first['value'] as String) as Map<String, dynamic>;
+        final map =
+            jsonDecode(state.first['value'] as String) as Map<String, dynamic>;
         queue = SavedQueue(
           songIds: (map['ids'] as List<dynamic>).whereType<String>().toList(),
           index: (map['index'] as num).toInt(),
@@ -107,7 +131,9 @@ class LocalMusicStore {
       }
     }
     return MusicBootstrap(
-      songs: songRows.map(Song.fromRow).toList(), playlists: playlists, queue: queue,
+      songs: songRows.map(Song.fromRow).toList(),
+      playlists: playlists,
+      queue: queue,
     );
   }
 
@@ -117,7 +143,9 @@ class LocalMusicStore {
   Future<Song?> importFile(PlatformFile picked) async {
     final ext = p.extension(picked.name).replaceFirst('.', '').toLowerCase();
     if (!supportedExtensions.contains(ext)) {
-      throw const FormatException('Unsupported audio format. Try MP3, M4A, FLAC, WAV, OGG or OPUS.');
+      throw const FormatException(
+        'Unsupported audio format. Try MP3, M4A, FLAC, WAV, OGG or OPUS.',
+      );
     }
     final selectedPath = picked.path;
     if (selectedPath == null) {
@@ -125,12 +153,19 @@ class LocalMusicStore {
     }
     final source = File(selectedPath);
     if (!await source.exists() || await source.length() == 0) {
-      throw const FileSystemException('This file is empty or no longer accessible.');
+      throw const FileSystemException(
+        'This file is empty or no longer accessible.',
+      );
     }
     final digest = await sha256.bind(source.openRead()).first;
     final checksum = digest.toString();
-    final existing = await _db.query('tracks', columns: ['id'],
-      where: 'sha256 = ?', whereArgs: [checksum], limit: 1);
+    final existing = await _db.query(
+      'tracks',
+      columns: ['id'],
+      where: 'sha256 = ?',
+      whereArgs: [checksum],
+      limit: 1,
+    );
     if (existing.isNotEmpty) return null;
 
     final id = _uuid.v4();
@@ -141,12 +176,15 @@ class LocalMusicStore {
       final tags = await MusicTagReader.fromFile(destination.path);
       final artPath = await _saveArtwork(id, tags?.picture);
       final song = Song(
-        id: id, title: tags?.title ?? Song.titleFromFileName(picked.name),
+        id: id,
+        title: tags?.title ?? Song.titleFromFileName(picked.name),
         artist: tags?.artist ?? 'Unknown artist',
         album: tags?.album ?? 'Local files',
         artworkPath: artPath,
-        path: destination.path, fileName: picked.name,
-        sha256: checksum, importedAt: DateTime.now(),
+        path: destination.path,
+        fileName: picked.name,
+        sha256: checksum,
+        importedAt: DateTime.now(),
       );
       try {
         await _db.insert('tracks', song.toRow());
@@ -164,9 +202,9 @@ class LocalMusicStore {
     }
   }
 
-
   Future<String?> _saveArtwork(String id, List<int>? bytes) async {
-    if (bytes == null || bytes.isEmpty || bytes.length > 8 * 1024 * 1024) return null;
+    if (bytes == null || bytes.isEmpty || bytes.length > 8 * 1024 * 1024)
+      return null;
     final data = Uint8List.fromList(bytes);
     final extension = MusicTagReader.pictureExtension(data);
     if (extension == null) return null;
@@ -203,36 +241,60 @@ class LocalMusicStore {
         album: tags.album ?? song.album,
         artworkPath: artPath,
       );
-      if (song.title != updated.title || song.artist != updated.artist ||
-          song.album != updated.album || song.artworkPath != updated.artworkPath) {
-        await _db.update('tracks', {
-          'title': updated.title, 'artist': updated.artist,
-          'album': updated.album, 'artwork_path': updated.artworkPath,
-        }, where: 'id = ?', whereArgs: [song.id]);
+      if (song.title != updated.title ||
+          song.artist != updated.artist ||
+          song.album != updated.album ||
+          song.artworkPath != updated.artworkPath) {
+        await _db.update(
+          'tracks',
+          {
+            'title': updated.title,
+            'artist': updated.artist,
+            'album': updated.album,
+            'artwork_path': updated.artworkPath,
+          },
+          where: 'id = ?',
+          whereArgs: [song.id],
+        );
       }
       result.add(updated);
     }
     return result;
   }
 
-  Future<void> recordListening(String songId, int ms, {bool qualifiedPlay = false}) async {
+  Future<void> recordListening(
+    String songId,
+    int ms, {
+    bool qualifiedPlay = false,
+  }) async {
     if (ms <= 0 && !qualifiedPlay) return;
     await _db.transaction((txn) async {
-      final rows = await txn.query('listening_stats',
+      final rows = await txn.query(
+        'listening_stats',
         columns: ['listened_ms', 'plays'],
-        where: 'song_id = ?', whereArgs: [songId], limit: 1);
+        where: 'song_id = ?',
+        whereArgs: [songId],
+        limit: 1,
+      );
       final stamp = DateTime.now().millisecondsSinceEpoch;
       if (rows.isEmpty) {
         await txn.insert('listening_stats', {
-          'song_id': songId, 'listened_ms': ms,
-          'plays': qualifiedPlay ? 1 : 0, 'last_played_at': stamp,
+          'song_id': songId,
+          'listened_ms': ms,
+          'plays': qualifiedPlay ? 1 : 0,
+          'last_played_at': stamp,
         }, conflictAlgorithm: ConflictAlgorithm.ignore);
       } else {
-        await txn.update('listening_stats', {
-          'listened_ms': (rows.first['listened_ms'] as int) + ms,
-          'plays': (rows.first['plays'] as int) + (qualifiedPlay ? 1 : 0),
-          'last_played_at': stamp,
-        }, where: 'song_id = ?', whereArgs: [songId]);
+        await txn.update(
+          'listening_stats',
+          {
+            'listened_ms': (rows.first['listened_ms'] as int) + ms,
+            'plays': (rows.first['plays'] as int) + (qualifiedPlay ? 1 : 0),
+            'last_played_at': stamp,
+          },
+          where: 'song_id = ?',
+          whereArgs: [songId],
+        );
       }
     });
   }
@@ -292,7 +354,10 @@ class LocalMusicStore {
   }
 
   Future<void> setFavorite(String id, bool value) async => _db.update(
-    'tracks', {'favorite': value ? 1 : 0}, where: 'id = ?', whereArgs: [id],
+    'tracks',
+    {'favorite': value ? 1 : 0},
+    where: 'id = ?',
+    whereArgs: [id],
   );
 
   Future<MusicPlaylist> createPlaylist(String name) async {
@@ -302,19 +367,27 @@ class LocalMusicStore {
   }
 
   Future<void> renamePlaylist(String id, String name) async => _db.update(
-    'playlists', {'name': name.trim()}, where: 'id = ?', whereArgs: [id],
+    'playlists',
+    {'name': name.trim()},
+    where: 'id = ?',
+    whereArgs: [id],
   );
 
-  Future<void> deletePlaylist(String id) async => _db.delete(
-    'playlists', where: 'id = ?', whereArgs: [id],
-  );
+  Future<void> deletePlaylist(String id) async =>
+      _db.delete('playlists', where: 'id = ?', whereArgs: [id]);
 
   Future<void> updatePlaylistTracks(String id, List<String> ids) async {
     await _db.transaction((txn) async {
-      await txn.delete('playlist_tracks', where: 'playlist_id = ?', whereArgs: [id]);
+      await txn.delete(
+        'playlist_tracks',
+        where: 'playlist_id = ?',
+        whereArgs: [id],
+      );
       for (var i = 0; i < ids.length; i++) {
         await txn.insert('playlist_tracks', {
-          'playlist_id': id, 'song_id': ids[i], 'position': i,
+          'playlist_id': id,
+          'song_id': ids[i],
+          'position': i,
         });
       }
     });
@@ -326,8 +399,10 @@ class LocalMusicStore {
       'index': state.index,
       'positionMs': state.positionMs,
     });
-    await _db.insert('app_state', {'key': 'last_queue', 'value': value},
-      conflictAlgorithm: ConflictAlgorithm.replace);
+    await _db.insert('app_state', {
+      'key': 'last_queue',
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> dispose() => _db.close();
