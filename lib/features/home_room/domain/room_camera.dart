@@ -20,6 +20,15 @@ class RoomCamera {
   const RoomCamera({this.orbit = .5});
   final double orbit;
 
+  RoomPoint get eye {
+    final yaw = .12 + orbit.clamp(0.0, 1.0) * .60;
+    return RoomPoint(
+      13 * math.sin(yaw) * math.cos(.36),
+      1.45 + 13 * math.sin(.36),
+      13 * math.cos(yaw) * math.cos(.36),
+    );
+  }
+
   RoomProjection project(RoomPoint point, double width, double height) {
     final yaw = .12 + orbit.clamp(0.0, 1.0) * .60;
     const pitch = .36;

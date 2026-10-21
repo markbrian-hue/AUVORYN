@@ -3,6 +3,7 @@ import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/core/settings/room_settings_store.dart';
 import 'package:auvoryn/features/home_room/domain/room_camera.dart';
+import 'package:auvoryn/features/home_room/domain/room_geometry.dart';
 import 'package:auvoryn/features/home_room/presentation/room_diorama.dart';
 import 'package:auvoryn/features/home_room/presentation/room_page.dart';
 import 'package:auvoryn/features/home_room/presentation/room_scene.dart';
@@ -53,6 +54,50 @@ RoomDioramaPainter painter(WidgetTester tester) => tester
     .single;
 
 void main() {
+  test(
+    'wall-mounted art remains in front even when its centroid is farther away',
+    () {
+      final tree = RoomBsp([
+        const RoomPolygon([
+          RoomPoint(0, 0, -3),
+          RoomPoint(0, 4, -3),
+          RoomPoint(0, 4, 3),
+          RoomPoint(0, 0, 3),
+        ], 'wall'),
+        const RoomPolygon([
+          RoomPoint(.1, 2, -2),
+          RoomPoint(.1, 3, -2),
+          RoomPoint(.1, 3, -1),
+          RoomPoint(.1, 2, -1),
+        ], 'art'),
+      ]);
+      expect(
+        tree.backToFront(const RoomPoint(5, 4, 10)).map((p) => p.material),
+        ['wall', 'art'],
+      );
+    },
+  );
+  test('intersecting surfaces split at their true plane before painting', () {
+    final tree = RoomBsp([
+      const RoomPolygon([
+        RoomPoint(-2, -2, 0),
+        RoomPoint(2, -2, 0),
+        RoomPoint(2, 2, 0),
+        RoomPoint(-2, 2, 0),
+      ], 'wall'),
+      const RoomPolygon([
+        RoomPoint(-1, -1, -1),
+        RoomPoint(1, -1, 1),
+        RoomPoint(1, 1, 1),
+        RoomPoint(-1, 1, -1),
+      ], 'panel'),
+    ]);
+    final sorted = tree.backToFront(const RoomPoint(0, 0, 10)).toList();
+    expect(sorted.map((p) => p.material), ['panel', 'wall', 'panel']);
+    expect(sorted.first.points.every((p) => p.z <= 0), isTrue);
+    expect(sorted.last.points.every((p) => p.z >= 0), isTrue);
+  });
+
   test('camera keeps authored room vertices in front of its near plane', () {
     for (final orbit in [0.0, .25, .5, .75, 1.0]) {
       final camera = RoomCamera(orbit: orbit);

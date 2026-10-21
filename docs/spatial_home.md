@@ -2,7 +2,8 @@
 
 The home screen is now a small 3D listening apartment, rendered entirely offline
 with Flutter. Authored world-space surfaces use perspective projection and depth
-sorting, shared with the object controls. The scene includes a walnut console,
+ordering, shared with the object controls. A cached binary-space partition splits
+intersecting surfaces so walls, shelves and decorative details occlude correctly. The scene includes a walnut console,
 turntable, speakers, record shelf, upholstered sofa, rug, coffee table, floor lamp,
 plant, framed artwork and a window with the existing city, coast and mountain views.
 
@@ -26,7 +27,7 @@ plant, framed artwork and a window with the existing city, coast and mountain vi
 
 The static architecture/furniture and animated details use separate repaint
 boundaries. Camera and light changes repaint the architecture only while those
-values change. Animation stops when backgrounded, offstage, or reduced motion is
+values change. Camera movement reuses the scene geometry and partition tree. Animation stops when backgrounded, offstage, or reduced motion is
 requested. Reduced motion keeps intentional camera controls immediate.
 
 This is a lightweight geometric diorama, not a game-engine renderer. There are no
@@ -42,7 +43,7 @@ large-text preset persistence. Existing room interaction tests remain in place.
 
 CI runs analysis, tests, actual Flutter PNG captures and the Android debug build.
 The opt-in `room_visual_preview_test.dart` capture writes `home`, `midnight`,
-`sunset-coast` and `rain-mountain` PNGs into `build/room-previews`. CI publishes them
+`sunset-coast`, `rain-mountain` and both orbit-extreme PNGs into `build/room-previews`. CI publishes them
 as `auvoryn-room-previews` for visual review. These are rendered application views,
 not concept mockups or performance measurements. Final verification results and
 preview findings are recorded in the pull request.

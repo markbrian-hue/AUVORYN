@@ -1,4 +1,7 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
+
+import 'package:auvoryn/features/home_room/domain/room_geometry.dart';
 
 import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/features/home_room/domain/room_camera.dart';
@@ -6,42 +9,52 @@ import 'package:flutter/material.dart';
 
 /// Authored 3D surfaces, projected and depth-sorted on Flutter's canvas.
 /// No downloaded model, WebView, sensor or separate rendering engine is used.
-class RoomDioramaPainter extends CustomPainter {
-  RoomDioramaPainter({
-    required this.settings,
-    required this.camera,
-    required this.light,
-  });
+class RoomDioramaGeometry {
+  RoomDioramaGeometry(this.settings, this.light)
+    : _model = _Apartment(settings, light);
   final RoomSettings settings;
-  final RoomCamera camera;
   final double light;
+  final _Apartment _model;
+}
 
+class RoomDioramaPainter extends CustomPainter {
+  RoomDioramaPainter({required this.geometry, required this.camera});
+  final RoomDioramaGeometry geometry;
+  final RoomCamera camera;
   @override
-  void paint(Canvas canvas, Size size) {
-    final model = _Apartment(settings, light);
-    model.paint(canvas, size, camera);
-  }
-
+  void paint(Canvas canvas, Size size) =>
+      geometry._model.paint(canvas, size, camera);
   @override
   bool shouldRepaint(covariant RoomDioramaPainter oldDelegate) =>
-      oldDelegate.settings != settings ||
-      oldDelegate.camera.orbit != camera.orbit ||
-      oldDelegate.light != light;
+      oldDelegate.geometry != geometry ||
+      oldDelegate.camera.orbit != camera.orbit;
 }
 
 class _Face {
-  const _Face(this.points, this.color);
+  const _Face(
+    this.points,
+    this.color, {
+    this.endColor,
+    this.gradientStart,
+    this.gradientEnd,
+  });
   final List<RoomPoint> points;
   final Color color;
+  final Color? endColor;
+  final RoomPoint? gradientStart, gradientEnd;
 }
 
 class _Apartment {
   _Apartment(this.settings, this.light) {
     _build();
+    _tree = RoomBsp([
+      for (final face in _faces) RoomPolygon(face.points, face),
+    ]);
   }
   final RoomSettings settings;
   final double light;
   final _faces = <_Face>[];
+  late final RoomBsp<_Face> _tree;
   Color get glow => switch (settings.lampPalette) {
     LampPalette.amber => const Color(0xFFFFCF94),
     LampPalette.rose => const Color(0xFFF3A8BB),
@@ -411,16 +424,20 @@ class _Apartment {
     );
     final top = sunset ? const Color(0xFF8E6179) : const Color(0xFF182A49);
     final bottom = sunset ? const Color(0xFFE1AB84) : const Color(0xFF647C97);
-    for (var i = 0; i < 32; i++) {
-      wallRect(
-        x,
-        y + i * h / 32,
-        w,
-        h / 32 + .003,
-        -2.760,
-        Color.lerp(bottom, top, i / 31)!,
-      );
-    }
+    _faces.add(
+      _Face(
+        [
+          const RoomPoint(x, y, -2.760),
+          const RoomPoint(x + w, y, -2.760),
+          const RoomPoint(x + w, y + h, -2.760),
+          const RoomPoint(x, y + h, -2.760),
+        ],
+        top,
+        endColor: bottom,
+        gradientStart: const RoomPoint(x + w / 2, y + h, -2.760),
+        gradientEnd: const RoomPoint(x + w / 2, y, -2.760),
+      ),
+    );
     if (settings.mood != RoomMood.thunderstorm) {
       disc(
         const RoomPoint(1.89, 3.19, -2.752),
@@ -484,16 +501,18 @@ class _Apartment {
       }
     } else if (settings.windowView == WindowView.mountain) {
       for (var ridge = 0; ridge < 2; ridge++) {
-        face([
-          RoomPoint(x, y, -2.738 + ridge * .004),
-          for (var i = 0; i < 9; i++)
-            RoomPoint(
-              x + i * w / 8,
-              y + .28 + ((i * 37 + ridge * 29) % 80) / 100,
-              -2.738 + ridge * .004,
-            ),
-          RoomPoint(x + w, y, -2.738 + ridge * .004),
-        ], ridge == 0 ? const Color(0xFF52647A) : const Color(0xFF344A5E));
+        for (var i = 0; i < 8; i++) {
+          final z = -2.738 + ridge * .004;
+          final left = x + i * w / 8, right = x + (i + 1) * w / 8;
+          final h1 = y + .28 + ((i * 37 + ridge * 29) % 80) / 100;
+          final h2 = y + .28 + (((i + 1) * 37 + ridge * 29) % 80) / 100;
+          face([
+            RoomPoint(left, y, z),
+            RoomPoint(right, y, z),
+            RoomPoint(right, h2, z),
+            RoomPoint(left, h1, z),
+          ], ridge == 0 ? const Color(0xFF52647A) : const Color(0xFF344A5E));
+        }
       }
     } else {
       wallRect(x, y, w, .67, -2.738, const Color(0xFF4E6B80));
@@ -518,33 +537,34 @@ class _Apartment {
   }
 
   void paint(Canvas canvas, Size size, RoomCamera camera) {
-    final projected = [
-      for (final f in _faces)
-        (
-          face: f,
-          points: [
-            for (final p in f.points)
-              camera.project(p, size.width, size.height),
-          ],
-        ),
-    ];
-    projected.sort(
-      (a, b) =>
-          (b.points.fold<double>(0, (v, p) => v + p.depth) / b.points.length)
-              .compareTo(
-                a.points.fold<double>(0, (v, p) => v + p.depth) /
-                    a.points.length,
-              ),
-    );
-    for (final f in projected) {
+    Offset project(RoomPoint p) {
+      final q = camera.project(p, size.width, size.height);
+      return Offset(q.x, q.y);
+    }
+
+    for (final polygon in _tree.backToFront(camera.eye)) {
+      final material = polygon.material;
       final path = Path()
-        ..addPolygon([for (final p in f.points) Offset(p.x, p.y)], true);
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = f.face.color
-          ..isAntiAlias = true,
-      );
+        ..addPolygon([for (final p in polygon.points) project(p)], true);
+      final paint = Paint()..color = material.color;
+      if (material.endColor != null) {
+        paint.shader = ui.Gradient.linear(
+          project(material.gradientStart!),
+          project(material.gradientEnd!),
+          [material.color, material.endColor!],
+        );
+      }
+      canvas.drawPath(path, paint);
+      // Cover subpixel seams between adjacent opaque mesh fragments.
+      if (material.color.a == 1 && material.endColor == null) {
+        canvas.drawPath(
+          path,
+          paint
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = .45
+            ..strokeJoin = StrokeJoin.round,
+        );
+      }
     }
   }
 }

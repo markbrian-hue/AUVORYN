@@ -54,6 +54,7 @@ class _RoomSceneState extends State<RoomScene>
   bool _reduceMotion = false;
   bool _tickerEnabled = true;
   bool _showControls = true;
+  RoomDioramaGeometry? _geometry;
 
   @override
   void initState() {
@@ -190,15 +191,21 @@ class _RoomSceneState extends State<RoomScene>
                     animation: Listenable.merge([_orbit, _light]),
                     builder: (context, _) {
                       final camera = RoomCamera(orbit: _orbit.value);
+                      if (_geometry?.settings != widget.settings ||
+                          _geometry?.light != _light.value) {
+                        _geometry = RoomDioramaGeometry(
+                          widget.settings,
+                          _light.value,
+                        );
+                      }
                       return Stack(
                         fit: StackFit.expand,
                         children: [
                           RepaintBoundary(
                             child: CustomPaint(
                               painter: RoomDioramaPainter(
-                                settings: widget.settings,
+                                geometry: _geometry!,
                                 camera: camera,
-                                light: _light.value,
                               ),
                             ),
                           ),

@@ -32,7 +32,12 @@ void main() {
       }
     });
     final root = GlobalKey();
-    Future<void> capture(String name, Widget child, Size size) async {
+    Future<void> capture(
+      String name,
+      Widget child,
+      Size size, {
+      Future<void> Function()? arrange,
+    }) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       await tester.pumpWidget(
@@ -45,6 +50,7 @@ void main() {
               ),
             ],
             child: MaterialApp(
+              debugShowCheckedModeBanner: false,
               theme: AppTheme.dark,
               home: Scaffold(body: child),
             ),
@@ -52,6 +58,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      if (arrange != null) {
+        await arrange();
+        await tester.pumpAndSettle();
+      }
       expect(tester.takeException(), isNull);
       await tester.runAsync(() async {
         final boundary =
@@ -85,6 +95,19 @@ void main() {
       room(const RoomSettings(reducedMotion: true)),
       const Size(430, 520),
     );
+    for (final direction in ['left', 'right']) {
+      await capture(
+        'orbit-$direction',
+        room(const RoomSettings(reducedMotion: true)),
+        const Size(430, 520),
+        arrange: () async {
+          await tester.tap(find.byKey(const Key('room_view_reset')));
+          await tester.tap(find.byKey(Key('room_view_$direction')));
+          await tester.tap(find.byKey(Key('room_view_$direction')));
+          await tester.pump();
+        },
+      );
+    }
     await capture(
       'sunset-coast',
       room(
