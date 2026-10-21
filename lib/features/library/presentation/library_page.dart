@@ -176,23 +176,86 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
   }
 }
 
-Future<String?> playlistNameDialog(BuildContext context, {required String title,
-  String initialName = ''}) async {
-  final input = TextEditingController(text: initialName);
-  try {
-    return await showDialog<String>(context: context, builder: (context) => AlertDialog(
-      title: Text(title),
-      content: TextField(controller: input, autofocus: true,
-        maxLength: 60, decoration: const InputDecoration(labelText: 'Playlist name')),
+Future<String?> playlistNameDialog(
+  BuildContext context, {
+  required String title,
+  String initialName = '',
+}) {
+  return showDialog<String>(
+    context: context,
+    builder: (_) => _PlaylistNameDialog(
+      title: title,
+      initialName: initialName,
+    ),
+  );
+}
+
+/// Owns the input controller for the entire lifetime of the dialog route.
+///
+/// showDialog completes as the route is popped, potentially before its reverse
+/// transition finishes. Disposing a controller in a caller's finally block can
+/// therefore leave the exiting TextField referencing a disposed controller.
+class _PlaylistNameDialog extends StatefulWidget {
+  const _PlaylistNameDialog({
+    required this.title,
+    required this.initialName,
+  });
+
+  final String title;
+  final String initialName;
+
+  @override
+  State<_PlaylistNameDialog> createState() => _PlaylistNameDialogState();
+}
+
+class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
+  late final TextEditingController _input;
+
+  @override
+  void initState() {
+    super.initState();
+    _input = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final name = _input.text.trim();
+    if (name.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).pop(name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        key: const Key('playlist_name_input'),
+        controller: _input,
+        autofocus: true,
+        maxLength: 60,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _save(),
+        decoration: const InputDecoration(labelText: 'Playlist name'),
+      ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        FilledButton(onPressed: () {
-          if (input.text.trim().isNotEmpty) Navigator.pop(context, input.text.trim());
-        }, child: const Text('Save')),
+        TextButton(
+          key: const Key('playlist_cancel'),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('playlist_save'),
+          onPressed: _save,
+          child: const Text('Save'),
+        ),
       ],
-    ));
-  } finally {
-    input.dispose();
+    );
   }
 }
 
