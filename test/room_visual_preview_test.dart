@@ -6,6 +6,7 @@ import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/features/home_room/presentation/room_page.dart';
 import 'package:auvoryn/features/home_room/presentation/room_scene.dart';
+import 'package:auvoryn/features/home_room/presentation/immersive_room_page.dart';
 import 'package:auvoryn/features/scenes/data/listening_scene_store.dart';
 import 'package:auvoryn/features/scenes/application/listening_scenes_controller.dart';
 import 'package:auvoryn/features/scenes/domain/listening_scene.dart';
@@ -138,6 +139,11 @@ void main() {
       'session-setup',
       const ListeningSessionSheet(),
       const Size(430, 1050),
+    );
+    await capture(
+      'immersive-apartment',
+      const ImmersiveRoomPage(),
+      const Size(430, 900),
     );
 
     await capture(
