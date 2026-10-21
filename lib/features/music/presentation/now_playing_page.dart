@@ -443,74 +443,103 @@ class _NowPlayingPageState extends ConsumerState<NowPlayingPage> {
       builder: (sheetContext) => Consumer(
         builder: (context, ref, _) {
           final music = ref.watch(musicProvider);
-          final indexed = {for (final song in music.songs) song.id: song};
+          final songs = {for (final song in music.songs) song.id: song};
+          final controller = ref.read(musicProvider.notifier);
           return SafeArea(
             top: false,
             child: FractionallySizedBox(
-              heightFactor: .72,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Your queue',
-                            style: AppTheme.editorial(size: 31),
-                          ),
+              heightFactor: .75,
+              child: Column(children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+                  child: Row(children: [
+                    Expanded(child: Text('Your queue',
+                        style: AppTheme.editorial(size: 31))),
+                    Text('${music.queueIds.length} tracks',
+                        style: const TextStyle(color: AuvorynColors.mist)),
+                  ]),
+                ),
+                if (music.shuffle) const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 7),
+                  child: Text('Disable shuffle to reorder, remove, or play next.',
+                    style: TextStyle(color: AuvorynColors.mist, fontSize: 12)),
+                ),
+                Expanded(child: ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  itemCount: music.queueIds.length,
+                  onReorder: (from, to) {
+                    if (music.shuffle) return;
+                    if (to > from) to--;
+                    controller.moveQueuedTrack(from, to);
+                  },
+                  itemBuilder: (context, index) {
+                    final id = music.queueIds[index];
+                    final song = songs[id];
+                    final current = index == music.currentIndex;
+                    if (song == null) return SizedBox(
+                      key: ValueKey('missing_$index'),
+                    );
+                    return Material(
+                      key: ValueKey('queue_$id'),
+                      color: current ? AuvorynColors.raised : Colors.transparent,
+                      child: ListTile(
+                        key: Key('queue_item_$index'),
+                        selected: current,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 7),
+                        leading: Icon(
+                          current ? Icons.graphic_eq_rounded :
+                              Icons.album_outlined,
+                          color: current ? AuvorynColors.champagne :
+                              AuvorynColors.mist,
                         ),
-                        Text(
-                          '${music.queueIds.length} tracks',
-                          style: const TextStyle(color: AuvorynColors.mist),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      itemCount: music.queueIds.length,
-                      itemBuilder: (context, index) {
-                        final track = indexed[music.queueIds[index]];
-                        if (track == null) return const SizedBox.shrink();
-                        final current = index == music.currentIndex;
-                        return ListTile(
-                          key: Key('queue_item_$index'),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10,
+                        title: Text(song.title, maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                        subtitle: Text(song.artist, maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          controller.jumpTo(index);
+                        },
+                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                          PopupMenuButton<String>(
+                            tooltip: 'Queue actions for ${song.title}',
+                            enabled: !music.shuffle,
+                            onSelected: (action) {
+                              if (action == 'next') {
+                                controller.playNextInQueue(song);
+                              } else if (action == 'remove') {
+                                controller.removeQueuedTrack(index);
+                              }
+                            },
+                            itemBuilder: (_) => [
+                              PopupMenuItem(
+                                value: 'next',
+                                enabled: !current,
+                                child: const Text('Play next'),
+                              ),
+                              PopupMenuItem(
+                                value: 'remove',
+                                enabled: !current,
+                                child: const Text('Remove from queue'),
+                              ),
+                            ],
                           ),
-                          leading: Icon(
-                            current
-                                ? Icons.graphic_eq_rounded
-                                : Icons.album_outlined,
-                            color: current
-                                ? AuvorynColors.champagne
-                                : AuvorynColors.mist,
-                          ),
-                          title: Text(
-                            track.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            track.artist,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          selected: current,
-                          onTap: () async {
-                            Navigator.of(sheetContext).pop();
-                            await ref
-                                .read(musicProvider.notifier)
-                                .jumpTo(index);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                          if (!music.shuffle)
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Icon(Icons.drag_handle_rounded,
+                                    color: AuvorynColors.mist),
+                              ),
+                            ),
+                        ]),
+                      ),
+                    );
+                  },
+                )),
+              ]),
             ),
           );
         },
