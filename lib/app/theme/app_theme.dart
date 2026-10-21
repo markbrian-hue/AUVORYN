@@ -35,19 +35,36 @@ abstract final class AppTheme {
     const muted = AuvorynColors.mist;
     const textTheme = TextTheme(
       displayLarge: TextStyle(fontSize: 44, height: 1.08, color: main),
-      headlineLarge: TextStyle(fontSize: 30, height: 1.18,
-        fontWeight: FontWeight.w600, color: main),
-      headlineMedium: TextStyle(fontSize: 26, height: 1.22,
-        fontWeight: FontWeight.w600, color: main),
-      titleLarge: TextStyle(fontSize: 18,
-        fontWeight: FontWeight.w600, color: main),
-      titleMedium: TextStyle(fontSize: 16,
-        fontWeight: FontWeight.w600, color: main),
+      headlineLarge: TextStyle(
+        fontSize: 30,
+        height: 1.18,
+        fontWeight: FontWeight.w600,
+        color: main,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 26,
+        height: 1.22,
+        fontWeight: FontWeight.w600,
+        color: main,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: main,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: main,
+      ),
       bodyLarge: TextStyle(fontSize: 17, height: 1.45, color: main),
       bodyMedium: TextStyle(fontSize: 15, height: 1.45, color: main),
       bodySmall: TextStyle(fontSize: 13, height: 1.45, color: muted),
-      labelLarge: TextStyle(fontSize: 15,
-        fontWeight: FontWeight.w600, color: main),
+      labelLarge: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: main,
+      ),
     );
 
     return ThemeData(
@@ -62,9 +79,8 @@ abstract final class AppTheme {
         onSurface: AuvorynColors.ivory,
         error: Color(0xFFFF9F9A),
       ),
-      // Instrument Serif and Manrope are optional local brand assets.
-      // AUVORYN still works without them; Flutter uses system fallbacks.
-      textTheme: textTheme,
+      fontFamily: 'Manrope',
+      textTheme: textTheme.apply(fontFamily: 'Manrope'),
       iconTheme: const IconThemeData(color: AuvorynColors.ivory, size: 22),
       dividerColor: AuvorynColors.raised,
       splashFactory: InkRipple.splashFactory,

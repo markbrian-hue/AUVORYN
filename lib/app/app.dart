@@ -44,6 +44,18 @@ class _AuvorynAppState extends ConsumerState<AuvorynApp> {
       title: 'Auvoryn',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        final reduced = ref.watch(
+          roomSettingsProvider.select((s) => s.reducedMotion),
+        );
+        return MediaQuery(
+          data: media.copyWith(
+            disableAnimations: media.disableAnimations || reduced,
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       routerConfig: appRouter,
     );
   }
