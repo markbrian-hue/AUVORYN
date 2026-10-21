@@ -190,7 +190,7 @@ class MusicController extends Notifier<MusicState> {
     state = state.copyWith(loading: true, clearError: true);
     var count = 0;
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: LocalMusicStore.supportedExtensions.toList(),
         allowMultiple: true,

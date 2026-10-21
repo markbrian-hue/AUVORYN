@@ -167,8 +167,11 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     try {
       await ref.read(musicProvider.notifier).createPlaylist(name);
     } catch (error) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to create playlist: $error')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to create playlist: $error')),
+        );
+      }
     }
   }
 }

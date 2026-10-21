@@ -1,6 +1,7 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/features/library/presentation/library_page.dart';
 import 'package:auvoryn/features/music/application/music_controller.dart';
+import 'package:auvoryn/features/music/domain/song.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,8 +14,11 @@ class PlaylistDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final music = ref.watch(musicProvider);
     final matching = music.playlists.where((p) => p.id == playlistId);
-    if (matching.isEmpty) return const Scaffold(
-      body: Center(child: Text('This playlist no longer exists.')));
+    if (matching.isEmpty) {
+      return const Scaffold(
+        body: Center(child: Text('This playlist no longer exists.')),
+      );
+    }
     final playlist = matching.first;
     final indexed = {for (final s in music.songs) s.id: s};
     final songs = [for (final id in playlist.songIds) if (indexed[id] != null) indexed[id]!];
