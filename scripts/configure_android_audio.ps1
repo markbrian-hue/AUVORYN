@@ -21,7 +21,18 @@ if (-not (Test-Path $path)) {
 $androidNs = 'http://schemas.android.com/apk/res/android'
 $toolsNs = 'http://schemas.android.com/tools'
 $root = $doc.DocumentElement
-$root.SetAttribute('xmlns:tools', 'http://www.w3.org/2000/xmlns/', $toolsNs)
+# XML namespace declarations require an xmlns-prefixed XmlAttribute.
+# SetAttribute(localName, namespaceURI, value) must not receive 'xmlns:tools'
+# as its localName, otherwise System.Xml raises a namespaceURI exception.
+$xmlnsNs = 'http://www.w3.org/2000/xmlns/'
+$toolsDeclaration = $root.GetAttributeNode('tools', $xmlnsNs)
+if ($null -eq $toolsDeclaration) {
+  $toolsDeclaration = $doc.CreateAttribute('xmlns', 'tools', $xmlnsNs)
+  $toolsDeclaration.Value = $toolsNs
+  [void]$root.SetAttributeNode($toolsDeclaration)
+} else {
+  $toolsDeclaration.Value = $toolsNs
+}
 foreach ($permission in @('android.permission.WAKE_LOCK',
                            'android.permission.FOREGROUND_SERVICE',
                            'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK')) {
