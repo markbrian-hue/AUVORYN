@@ -31,6 +31,15 @@ jobs:
         run: flutter analyze
       - name: Unit and widget tests
         run: flutter test
+      - name: Render room design previews
+        run: flutter test --dart-define=CAPTURE_ROOM_PREVIEWS=true test/room_visual_preview_test.dart
+      - name: Upload room design previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: auvoryn-room-previews
+          path: build/room-previews/*.png
+          retention-days: 14
+          if-no-files-found: error
       - name: Assemble Android QA APK
         run: flutter build apk --debug --no-pub
       - name: Verify APK exists and is nonempty
