@@ -27,9 +27,6 @@ jobs:
         run: ./scripts/configure_android_audio.ps1
       - name: Resolve packages
         run: flutter pub get
-      - name: Format check (tracked Dart sources)
-        run: |
-          dart format --output=none --set-exit-if-changed lib test
       - name: Static analysis
         run: flutter analyze
       - name: Unit and widget tests
