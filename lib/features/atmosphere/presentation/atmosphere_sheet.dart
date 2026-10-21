@@ -76,9 +76,9 @@ class _AtmosphereSheet extends ConsumerWidget {
           const SizedBox(height: 26),
           const _SectionLabel('SOUNDS OF THE ROOM'),
           const SizedBox(height: 9),
-          Container(
-            decoration: BoxDecoration(color: AuvorynColors.raised,
-              borderRadius: BorderRadius.circular(18)),
+          Material(
+            color: AuvorynColors.raised,
+            borderRadius: BorderRadius.circular(18),
             child: SwitchListTile(
               key: const Key('ambience_enable'),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14),
