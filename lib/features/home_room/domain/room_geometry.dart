@@ -65,9 +65,11 @@ class _BspNode<T> {
       return null;
     }
     _Plane? plane;
+    RoomPolygon<T>? splitter;
     for (final polygon in polygons) {
       plane = _Plane.from(polygon);
       if (plane != null) {
+        splitter = polygon;
         break;
       }
     }
@@ -78,6 +80,13 @@ class _BspNode<T> {
         back = <RoomPolygon<T>>[],
         coplanar = <RoomPolygon<T>>[];
     for (final polygon in polygons) {
+      // Consume the chosen surface even if rounding on a very thin clipped
+      // triangle puts a vertex just outside its own plane. This guarantees
+      // progress instead of recursively partitioning the same face forever.
+      if (identical(polygon, splitter)) {
+        coplanar.add(polygon);
+        continue;
+      }
       final distances = [for (final p in polygon.points) plane.side(p)];
       final positive = distances.any((d) => d > epsilon);
       final negative = distances.any((d) => d < -epsilon);

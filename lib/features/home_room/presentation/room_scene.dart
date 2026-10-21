@@ -198,16 +198,29 @@ class _RoomSceneState extends State<RoomScene>
                           _light.value,
                         );
                       }
+                      final architecture = CustomPaint(
+                        key: ValueKey(
+                          '${widget.settings.mood.name}-${widget.settings.windowView.name}-${widget.settings.lampPalette.name}',
+                        ),
+                        painter: RoomDioramaPainter(
+                          geometry: _geometry!,
+                          camera: camera,
+                        ),
+                        child: const SizedBox.expand(),
+                      );
                       return Stack(
                         fit: StackFit.expand,
                         children: [
                           RepaintBoundary(
-                            child: CustomPaint(
-                              painter: RoomDioramaPainter(
-                                geometry: _geometry!,
-                                camera: camera,
-                              ),
-                            ),
+                            child:
+                                _reduceMotion || !_foreground || !_tickerEnabled
+                                ? architecture
+                                : AnimatedSwitcher(
+                                    duration: AuvorynMotion.atmosphere,
+                                    switchInCurve: Curves.easeInOutCubic,
+                                    switchOutCurve: Curves.easeInOutCubic,
+                                    child: architecture,
+                                  ),
                           ),
                           IgnorePointer(
                             child: RepaintBoundary(

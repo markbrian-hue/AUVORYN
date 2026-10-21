@@ -48,7 +48,14 @@ class _Apartment {
   _Apartment(this.settings, this.light) {
     _build();
     _tree = RoomBsp([
-      for (final face in _faces) RoomPolygon(face.points, face),
+      // Triangles also make curved furniture and folded plant leaves planar.
+      for (final face in _faces)
+        for (var i = 1; i < face.points.length - 1; i++)
+          RoomPolygon([
+            face.points[0],
+            face.points[i],
+            face.points[i + 1],
+          ], face),
     ]);
   }
   final RoomSettings settings;

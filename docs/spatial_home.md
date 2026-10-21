@@ -16,7 +16,7 @@ plant, framed artwork and a window with the existing city, coast and mountain vi
 - Tap the record, speaker, lamp, shelf or window to use the existing application
   actions. Controls share the camera projection and separate their 48px hit regions
   on compact screens. They can be hidden for an uninterrupted view.
-- Lamp intensity eases between settings. The record rotates only during real
+- Mood and window changes crossfade; lamp intensity eases between settings. The record rotates only during real
   playback; rain follows the selected atmosphere. No beat detection is simulated.
 - Home presets select After hours, Soft rain or Golden hour using the existing
   settings persistence. Fine-tune opens all atmosphere, lighting and audio controls.
@@ -37,7 +37,8 @@ Hardware FPS, memory and battery measurements still require device profiling.
 
 ## Verification
 
-Regression tests cover camera projection/bounds, orbit and reset, compact hit areas,
+Regression tests cover all 18 authored mood/window geometry variants, plane
+intersection and occlusion ordering, camera projection/bounds, orbit and reset, compact hit areas,
 object callbacks, background suspension, reduced motion, visibility controls and
 large-text preset persistence. Existing room interaction tests remain in place.
 

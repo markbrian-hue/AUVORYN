@@ -55,6 +55,22 @@ RoomDioramaPainter painter(WidgetTester tester) => tester
 
 void main() {
   test(
+    'all authored room variants construct without recursive geometry failures',
+    () {
+      for (final mood in RoomMood.values) {
+        for (final view in WindowView.values) {
+          expect(
+            () => RoomDioramaGeometry(
+              RoomSettings(mood: mood, windowView: view),
+              .8,
+            ),
+            returnsNormally,
+          );
+        }
+      }
+    },
+  );
+  test(
     'wall-mounted art remains in front even when its centroid is farther away',
     () {
       final tree = RoomBsp([
@@ -170,6 +186,8 @@ void main() {
     'camera controls work with reduced motion and scene animation stops in background',
     (tester) async {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpWidget(scene(settings: const RoomSettings()));
+      await tester.pump();
       await tester.pumpWidget(
         scene(settings: const RoomSettings(mood: RoomMood.lightRain)),
       );
