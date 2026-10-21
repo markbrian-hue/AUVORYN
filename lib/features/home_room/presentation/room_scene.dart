@@ -157,12 +157,15 @@ class _RoomSceneState extends State<RoomScene>
             Positioned(
               left: 15, right: 15, bottom: 14,
               child: IgnorePointer(
-                child: Row(children: [
-                  _sceneLabel('MIDNIGHT APARTMENT', Icons.circle),
-                  const Spacer(),
+                child: LayoutBuilder(builder: (context, bounds) => Row(children: [
+                  if (bounds.maxWidth >= 310) ...[
+                    _sceneLabel('MIDNIGHT APARTMENT', Icons.circle),
+                    const Spacer(),
+                  ] else
+                    const Spacer(),
                   _sceneLabel(widget.isPlaying ? 'PLAYING' : 'QUIET',
                     widget.isPlaying ? Icons.graphic_eq : Icons.nightlight_round),
-                ]),
+                ])),
               ),
             ),
           ],
