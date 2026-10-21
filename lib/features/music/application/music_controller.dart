@@ -111,6 +111,8 @@ class MusicState {
 
 class MusicController extends Notifier<MusicState> {
   AudioPlayer? _player;
+  bool _sleepFinishing = false;
+  double _sleepGain = 1.0;
   Future<AudioPlayer>? _audioInitialization;
   Future<void> _transportWrites = Future<void>.value();
   Future<void> _libraryWrites = Future<void>.value();
@@ -139,7 +141,7 @@ class MusicController extends Notifier<MusicState> {
     ref.listen<RoomSettings>(roomSettingsProvider, (previous, next) {
       if (previous?.musicVolume != next.musicVolume && _player != null) {
         unawaited(
-          _player!.setVolume(next.musicVolume).catchError((Object error) {
+          _player!.setVolume(next.musicVolume * _sleepGain).catchError((Object error) {
             if (!_disposed) {
               state = state.copyWith(error: 'Unable to change volume: $error');
             }
@@ -177,7 +179,7 @@ class MusicController extends Notifier<MusicState> {
       if (_disposed) {
         throw StateError('Music controller is closed.');
       }
-      await player.setVolume(ref.read(roomSettingsProvider).musicVolume);
+      await player.setVolume(ref.read(roomSettingsProvider).musicVolume * _sleepGain);
       if (_disposed) {
         throw StateError('Music controller is closed.');
       }
@@ -654,6 +656,40 @@ class MusicController extends Notifier<MusicState> {
       }
     }
   });
+
+  /// Temporarily fade the single native music player, then pause it. The
+  /// user's chosen volume is never persisted as zero or overwritten.
+  Future<void> pauseForSleep({bool fade = true}) async {
+    if (_sleepFinishing) return;
+    _sleepFinishing = true;
+    try {
+      await _transport(() async {
+        final player = _player;
+        if (player == null || !player.playing) return;
+        final level = ref.read(roomSettingsProvider).musicVolume;
+        try {
+          if (fade) {
+            for (var i = 1; i <= 15; i++) {
+              if (_disposed || !player.playing) break;
+              _sleepGain = 1 - i / 15;
+              await player.setVolume(level * _sleepGain);
+              await Future<void>.delayed(const Duration(milliseconds: 130));
+            }
+          }
+          if (!_disposed && player.playing) {
+            await player.pause();
+            _persistQueue();
+          }
+        } finally {
+          _sleepGain = 1;
+          if (!_disposed) await player.setVolume(
+            ref.read(roomSettingsProvider).musicVolume);
+        }
+      });
+    } finally {
+      _sleepFinishing = false;
+    }
+  }
 
   Future<void> next() => _transport(() async {
     final player = _player;
