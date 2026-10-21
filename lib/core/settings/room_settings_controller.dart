@@ -29,9 +29,28 @@ class RoomSettingsController extends Notifier<RoomSettings> {
   Future<bool> setReducedMotion(bool value) =>
       _update(state.copyWith(reducedMotion: value));
 
-  Future<bool> _update(RoomSettings next) async {
+  Future<bool> setAmbienceEnabled(bool enabled) =>
+      _update(state.copyWith(ambienceEnabled: enabled));
+
+  Future<bool> setLampPalette(LampPalette palette) =>
+      _update(state.copyWith(lampPalette: palette));
+
+  /// Preview changes are reflected in the audio immediately, while persistence
+  /// occurs when the gesture ends. This avoids dozens of flash/disk writes.
+  Future<bool> setAmbienceVolume(double value, {bool persist = true}) =>
+      _update(state.copyWith(ambienceVolume: value), persist: persist);
+
+  Future<bool> setMusicVolume(double value, {bool persist = true}) =>
+      _update(state.copyWith(musicVolume: value), persist: persist);
+
+  Future<bool> setLampBrightness(double value, {bool persist = true}) =>
+      _update(state.copyWith(lampBrightness: value), persist: persist);
+
+  Future<bool> _update(RoomSettings next, {bool persist = true}) async {
     final previous = state;
     state = next;
+    if (!persist) return true;
+
     // Serialize writes so rapid taps cannot persist an older state last.
     final save = _writeQueue.then(
       (_) => ref.read(roomSettingsStoreProvider).save(next),
@@ -41,7 +60,6 @@ class RoomSettingsController extends Notifier<RoomSettings> {
       await save;
       return true;
     } catch (_) {
-      // Only roll back if a more recent interaction has not superseded it.
       if (identical(state, next)) state = previous;
       return false;
     }

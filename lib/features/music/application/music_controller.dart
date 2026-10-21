@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:auvoryn/core/settings/room_settings.dart';
+import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/features/music/data/local_music_store.dart';
 import 'package:auvoryn/features/music/domain/song.dart';
 import 'package:file_picker/file_picker.dart';
@@ -88,6 +90,13 @@ class MusicController extends Notifier<MusicState> {
 
   @override
   MusicState build() {
+    // The app's one background-enabled music engine owns notification controls.
+    // Atmospheric sound uses a separate backend without audio focus requests.
+    ref.listen<RoomSettings>(roomSettingsProvider, (previous, next) {
+      if (previous?.musicVolume != next.musicVolume && _player != null) {
+        unawaited(_player!.setVolume(next.musicVolume));
+      }
+    });
     final initial = ref.read(initialMusicProvider);
     ref.onDispose(() {
       _disposed = true;
@@ -110,6 +119,7 @@ class MusicController extends Notifier<MusicState> {
     await session.configure(AudioSessionConfiguration.music());
     final player = AudioPlayer(maxSkipsOnError: 2);
     _player = player;
+    await player.setVolume(ref.read(roomSettingsProvider).musicVolume);
     _subscriptions.add(player.positionStream.listen((position) {
       if (_disposed) return;
       state = state.copyWith(position: position);
@@ -191,7 +201,6 @@ class MusicController extends Notifier<MusicState> {
     state = state.copyWith(loading: true, clearError: true);
     var count = 0;
     try {
-      // file_picker 12+ returns a list directly; cancellation yields an empty list.
       final selectedFiles = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: LocalMusicStore.supportedExtensions.toList(),
