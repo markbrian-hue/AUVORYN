@@ -47,33 +47,7 @@ if ($mainActivityFiles.Count -ne 1) {
 }
 $mainActivityFile = $mainActivityFiles[0]
 $source = [System.IO.File]::ReadAllText($mainActivityFile.FullName)
-$packageMatch = [regex]::Match($source, '(?m)^\s*package\s+([A-Za-z_][\w.]*)\s*;?\s*
-$serviceName = 'com.ryanheise.audioservice.AudioService'
-$receiverName = 'com.ryanheise.audioservice.MediaButtonReceiver'
-foreach ($item in @(@('service', $serviceName, 'android.media.browse.MediaBrowserService'),
-                    @('receiver', $receiverName, 'android.intent.action.MEDIA_BUTTON'))) {
-  $found = $false
-  foreach ($node in $app.SelectNodes($item[0])) {
-    if ($node.GetAttribute('name', $androidNs) -eq $item[1]) { $found = $true }
-  }
-  if ($found) { continue }
-  $element = $doc.CreateElement($item[0])
-  $element.SetAttribute('name', $androidNs, $item[1])
-  $element.SetAttribute('exported', $androidNs, 'true')
-  $element.SetAttribute('ignore', $toolsNs, 'Instantiatable')
-  if ($item[0] -eq 'service') {
-    $element.SetAttribute('foregroundServiceType', $androidNs, 'mediaPlayback')
-  }
-  $intent = $doc.CreateElement('intent-filter')
-  $action = $doc.CreateElement('action')
-  $action.SetAttribute('name', $androidNs, $item[2])
-  [void]$intent.AppendChild($action)
-  [void]$element.AppendChild($intent)
-  [void]$app.AppendChild($element)
-}
-$doc.Save((Join-Path (Get-Location) $path))
-Write-Host 'Android background-audio manifest configured.'
-)
+$packageMatch = [regex]::Match($source, '(?m)^\s*package\s+([A-Za-z_][\w.]*)\s*;?\s*$')
 if (-not $packageMatch.Success) { throw 'Cannot read the MainActivity package declaration.' }
 $mainActivityName = "$($packageMatch.Groups[1].Value).MainActivity"
 $modifiedSource = $source
