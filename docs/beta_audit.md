@@ -1,6 +1,6 @@
 # AUVORYN beta audit — 21 October 2026
 
-## Assessment and scope
+## 1. Executive summary
 
 Baseline: `main` at `568e65aa116d7abfb93c034176d8cb87fdc42d44`, version
 `0.7.0+8`. No open pull requests were returned at discovery. The baseline
@@ -20,7 +20,7 @@ settings, ambience, routing, major UI screens, native setup scripts, CI, release
 docs, tests and asset declarations. No existing native platform directories are
 tracked. No user data, app identifier, release key, or schema version was changed.
 
-## Prioritized findings and implementation
+## 2. QA findings
 
 | Priority | Finding / reproduction | Files | Change and evidence |
 | --- | --- | --- | --- |
@@ -43,13 +43,56 @@ are parameterized; playlist replacement uses a transaction; imports copy to UUID
 paths and hash for deduplication. This is a source review, not a penetration test
 or exhaustive vulnerability database scan.
 
-## Verification
+## 3. Fixes implemented
+
+Playback commands now share one initialization and serialized command stream.
+Library edits use current state when they execute, protecting rapid playlist and
+favorite changes. Metadata refresh preserves intervening favorite changes, and
+async callbacks guard disposal. Completed playback can restart with one tap.
+
+Queue snapshots are synchronized after transport actions; explicit seeks are not
+credited as listening. History deletion is ordered with history writes. Reimport
+of identical missing music repairs only its private file path, preserving the
+track ID and related favorites, playlists and history. No schema upgrade or reset
+is introduced by this change.
+
+## 4. UI/UX improvements
+
+Manrope now provides the interface typography and Instrument Serif the editorial
+headings. Both are bundled offline with their OFL licenses. The existing dark
+palette and AUVORYN identity are retained. App and operating-system reduced motion
+settings now reach every route, and decorative vinyl rotation pauses in the
+background. Playlist and customization sheets scroll in constrained layouts;
+player transport buttons fit a 320px screen while retaining usable touch targets.
+
+Shared artwork transitions, interactive player dismissal, screen-reader focus and
+visual review on devices remain future work. This pass improves the existing
+design system; it is not a complete native iOS redesign or a visual sign-off.
+
+## 5. Performance findings
+
+Library and playlist screens select collection/status changes instead of rebuilding
+their collection UI for every playback position tick. Metadata comparison now
+uses an ID map instead of repeated list searches. Background vinyl animation stops
+scheduling frames, as checked by a widget regression. These remove identifiable
+work; no FPS, startup, memory or battery improvements have been measured.
+
+Remaining risks are eager large-library rows, import hashing on the UI isolate,
+artwork decode limits and room painter cost on lower-powered devices. Profile
+representative devices and datasets before making broader architectural changes.
+
+## 6. Test results
 
 Local Dart formatting and `git diff --check` were executed. A standalone Dart history smoke check passed (explicit seek, pause, track change and qualification; 12,000 ms credited). FontTools parsed both bundled fonts successfully. Calculated WCAG contrast for ivory/mist/champagne on the three solid surface tokens ranges from 6.55:1 to 16.98:1; this does not establish contrast over every scene or gradient. Local Flutter package
 setup was rejected by automatic approval review because it attempted to reach
 the cloud instance metadata service. That request was not retried. GitHub Actions
 is the independent validation path for analyzer, tests and Android compilation.
-Final results are attached to [pull request #9](https://github.com/markbrian-hue/AUVORYN/pull/9) and its commit-specific Checks tab. The delivery summary records the validated commit and run.
+The application/test source at `bfc1852d1584c374977883910ffa8a727da5c24e` passed
+[GitHub Actions run 39618693484](https://github.com/markbrian-hue/AUVORYN/actions/runs/39618693484):
+package resolution, analyzer, all 42 tests and Android debug APK compilation. The
+APK was checked for nonzero size and uploaded as `auvoryn-android-debug-qa`
+(five-day retention). The final commit after that run updates only this report;
+its independent rerun is linked from [PR #9](https://github.com/markbrian-hue/AUVORYN/pull/9).
 
 New tests cover controller races, completed-track restart, disposal, favorite
 preservation, playlist updates, failed-write recovery, old schema v1/v2 upgrades,
@@ -67,7 +110,10 @@ controlled native-boundary double, not real audio output.
 | Standalone Dart listening-tracker regression | PASS |
 | Font parsing and solid-token contrast calculation | PASS — minimum 6.55:1 for tested pairs |
 | Local `flutter pub get`, analyzer, test, Android build | BLOCKED / NOT RUN after dependency setup rejection |
-| GitHub Actions analyzer, tests, debug APK | See PR #9 Checks and delivery summary for the final commit-specific result |
+| GitHub Actions package resolution | PASS — run 39618693484 |
+| GitHub Actions `flutter analyze` | PASS — no issues found |
+| GitHub Actions `flutter test` | PASS — 42 tests |
+| GitHub Actions Android audio setup and debug APK | PASS — built, verified nonempty and uploaded |
 | Device audio, Bluetooth, calls, lock-screen, battery/FPS, screenshot review | NOT RUN — no device/emulator available |
 | iOS build, release signing, Play Store readiness | NOT RUN / NOT READY |
 
@@ -75,7 +121,7 @@ No measured FPS, memory, battery, or startup improvement is claimed. Library
 selector changes remove an identified rebuild cause. The reduced-motion test
 checks scheduled animation callbacks, not device energy use.
 
-## Remaining release and quality work
+### Remaining release and quality work
 
 - Ambience opts out of audio focus and has no explicit interruption listener.
   Verify calls, alarms, headset unplug, notification stop and background mixing
@@ -101,7 +147,7 @@ checks scheduled animation callbacks, not device energy use.
 - Runtime permission/media-format coverage and malformed image/metadata limits
   need real decoder testing. The tag parser accepting a file does not prove playback.
 
-## Ranked feature recommendations
+## 7. Feature recommendations
 
 | Rank | Improvement | User value | Effort | Risk / cost | Priority |
 | --- | --- | --- | --- | --- | --- |
@@ -111,26 +157,29 @@ checks scheduled animation callbacks, not device energy use.
 | 4 | Lazy library list, album/artist views and sorting | Makes larger libraries usable | Medium | Low architecture impact; benchmark first | P2 |
 | 5 | First-launch import and accessibility walkthrough | Improves discoverability | Low/medium | Low runtime cost | P3 |
 
-## GitHub delivery
+## 8. GitHub delivery
 
 - Pull request: https://github.com/markbrian-hue/AUVORYN/pull/9
 - Branch: `qa/beta-reliability-and-accessibility`
 - Changes are isolated from `main`; no merge or force-push is performed.
-- Commits separate audio/library reliability, UI and fonts, validation fixes,
-  and non-destructive missing-file recovery. Exact hashes are listed in the PR.
+- Implementation commits: `5153165` (audio/library reliability), `2d57d72`
+  (UI/accessibility/fonts), `7f023b2` (completion/disposal), `c023012`
+  (analyzer/test compatibility), `18d21a5` (missing-file repair), and
+  `bfc1852` (compact-player regression harness). This report is a final docs-only commit.
 - Early CI runs exposed test API compatibility/lint problems and an offscreen
   test-finder mistake; those were fixed without removing the relevant assertions.
-- Only mark the PR ready after analyzer, all tests and debug APK compilation pass.
-  Device-dependent checks remain required even after automated CI succeeds.
+- Application validation run `39618693484` passed all automated gates. The final
+  docs-only commit is also validated before the PR is marked ready. Device-dependent
+  checks remain required even after automated CI succeeds.
 
-## Next three milestones
+## 9. Next development roadmap
 
 1. **Device reliability:** reproduce call/Bluetooth/unplug/background scenarios on
    two Android versions; verify upgrade preserves a populated library; define and
    test ambience interruption policy. Acceptance: documented PASS/FAIL evidence,
    no unexplained continuing audio or lost playback state.
-2. **Data resilience and library scale:** implement missing-file repair without
-   changing track IDs; export/restore with collision handling and migration tests;
+2. **Data resilience and library scale:** add a guided recovery flow around the
+   implemented missing-file repair; export/restore with collision handling and migration tests;
    profile a representative large library and make rows lazy. Acceptance: backup
    round-trip preserves songs, playlists, favorites and history; measured import
    and scrolling results with documented dataset/device.
