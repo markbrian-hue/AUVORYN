@@ -113,7 +113,7 @@ class ListeningScenesSheet extends ConsumerWidget {
           const SizedBox(height: 20),
           FilledButton.icon(
             key: const Key('scene_create'),
-            onPressed: busy || data.error != null
+            onPressed: busy || data.readFailed
                 ? null : () => _edit(context, ref),
             icon: const Icon(Icons.bookmark_add_outlined),
             label: const Text('Save the room as a scene'),
@@ -145,7 +145,7 @@ class ListeningScenesSheet extends ConsumerWidget {
                     ok ? '${scene.name} is ready. Music stays as it was.' :
                     'Unable to update room settings.');
               },
-              onDuplicate: busy || data.error != null ? null : () async {
+              onDuplicate: busy || data.readFailed ? null : () async {
                 final ok = await ref.read(listeningScenesProvider.notifier)
                     .duplicate(scene);
                 if (!context.mounted) return;
