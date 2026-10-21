@@ -1,4 +1,4 @@
-# Milestone 1 setup, intended for Windows PowerShell in the AUVORYN project root.
+# Milestone 2 setup, intended for Windows PowerShell in the AUVORYN project root.
 # Requires Flutter, Dart, and Android development tools on PATH.
 $ErrorActionPreference = 'Stop'
 if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) {
@@ -27,10 +27,11 @@ try {
 } finally {
   Remove-Item $platformDir -Recurse -Force
 }
+& "$PSScriptRoot/configure_android_audio.ps1"
 flutter pub get
 if ($LASTEXITCODE -ne 0) { throw 'Package retrieval failed.' }
 flutter analyze
 if ($LASTEXITCODE -ne 0) { throw 'Static analysis found issues.' }
 flutter test
 if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
-Write-Host 'Foundation setup complete. Run: flutter run'
+Write-Host 'Music player setup complete. Run: flutter run'

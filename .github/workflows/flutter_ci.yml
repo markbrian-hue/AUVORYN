@@ -1,0 +1,23 @@
+name: Flutter validation
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Bootstrap generated Android platform
+        run: flutter create --platforms=android .
+      - name: Resolve packages
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Unit and widget tests
+        run: flutter test

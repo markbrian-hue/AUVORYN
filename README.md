@@ -2,85 +2,50 @@
 
 **Sound, somewhere yours.**
 
-AUVORYN is an immersive offline-first music player with a personal listening room. This source tree is the **Milestone 1 foundation**, not a finished music player.
+AUVORYN is an immersive, personal, **offline-first** music listening room built with Flutter and Riverpod. The first room is **Midnight Apartment**.
 
-## Actual implemented features
+## Current progress — M2 Offline Music (0.2.0)
 
-- Premium dark theme tokens, original vector app mark, and mobile-responsive page composition.
-- Three real navigation destinations: Room, Library, Memories; functional Settings.
-- Original deterministic 2.5D **Midnight Apartment** scene, painted without external image assets.
-- Interactive room hotspots for a library route, ambience picker, and lamp.
-- Six visual ambience presets, lamp on/off and reduce-motion preference, all stored locally using `SharedPreferencesAsync`.
-- Honest empty states for library and history; no fabricated music or statistics.
-- Model tests and a navigation widget test written, **not run in this environment**.
+- Actual local file picker and import into persistent app-private storage
+- SQLite song library, deduplicated imports, favorites and playlists
+- Real `just_audio` playback, queue, seek, skip, shuffle and repeat
+- `just_audio_background` media session for Android notifications and lock screen (native Android manifest configuration required)
+- Global mini-player and Now Playing screen, while room and mood settings remain functional
+- Queue/position restoration (paused after relaunch)
 
-**Not yet implemented:** local file import, music library indexing, real audio playback, background playback, playlist or queue management, audio-reactive effects, ambience audio, SQLite/Drift, and cloud sync. Those belong to later milestones.
+The visual room is 2.5D; record taps open the music collection. Embedded tags/album art extraction, automated Android media scans, detailed listening statistics, realtime beat detection, and extra ambience audio are **not yet implemented**.
 
-## Getting running on Windows
+## First-time setup (Windows / Android)
 
-The generated source is supplied without Flutter platform directories because the Flutter SDK is not installed in the authoring environment. The included helper generates official Android/iOS templates **without overwriting the source files**.
-
-1. Install the Flutter SDK and Android SDK, then run `flutter doctor`. Android Studio or an Android emulator (or a real device) is required for Android deployment. iOS builds require macOS with Xcode.
-2. Open PowerShell in the directory containing this README and `pubspec.yaml`.
-3. Run:
+Install Flutter and Android Studio first. At repository root:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap_windows.ps1
-flutter devices
+flutter create --platforms=android,ios .
+flutter pub get
+powershell -ExecutionPolicy Bypass -File .\scripts\configure_android_audio.ps1
+flutter analyze
+flutter test
 flutter run
 ```
 
-Or generate platform folders through Flutter manually, then run `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter run`.
+Existing M1 clones which already have `android/` and `ios/`: only run `flutter pub get`, **the `configure_android_audio.ps1` script**, and then the three Flutter commands. Restart the app fully after introducing native plugins. Do not paste these commands in a folder without `pubspec.yaml`.
 
-The generated Android application identifier uses the **placeholder** `com.example.auvoryn`; select a unique app identifier before publishing.
+Alternatively, the project-specific `scripts/bootstrap_windows.ps1` builds missing platform shells, configures Android, and runs checks. Do not run the script while a prior temp platform shell still exists.
 
-## Project layout
+## Import music
 
-```text
-lib/
-  main.dart
-  app/
-    app.dart
-    routing/                 # GoRouter shell and destinations
-    theme/                   # shared visual tokens and typography
-  core/
-    settings/                # immutable model, Riverpod, local settings store
-    widgets/                 # original app logo mark
-  features/
-    home_room/presentation/  # room, interactive hotspots, 2.5D CustomPainter
-    atmosphere/presentation/ # adjustable modal sheet
-    library/presentation/    # transparent MVP empty state
-    memories/presentation/   # transparent MVP empty state
-    settings/presentation/   # functional settings
-assets/
-  fonts/                     # setup instructions, no embedded third-party fonts
-  rooms/                     # for future licensed/offline room media
-test/                        # tests that require Flutter SDK
-docs/                        # design, architecture, milestones, QA
-scripts/                     # safe Windows platform bootstrap
-```
+From **Library → Import Music**, choose music you own from the Android file picker or iOS Files. The selected files are copied into AUVORYN app storage so they stay available after the file picker clears temporary cache. Imported music uses device storage and is removed if the app is uninstalled. No permissions to browse your full device library are requested.
 
-## Why the app is deliberately incomplete
+Tap any song for the full player. Use its action menu to favorite it or add it to playlists. Playback is local; no account or internet is required.
 
-The original master specification requests actual playback and local music ownership. A visual-only player would violate that requirement. Milestone 1 establishes a coherent identity and durable architecture, while intentionally **not rendering fake play/pause, fake tracks or fake listening statistics**. Milestone 2 integrates `just_audio`, `audio_service`, device-appropriate import and SQLite/Drift.
+## Engineering notes
 
-## Design identity
+- Architecture: feature-first Flutter, Riverpod 3, GoRouter, SQLite via sqflite.
+- Audio: a single just_audio instance plus just_audio_background/audio_service for media control and audio_session for music interruptions.
+- Files: SHA-256 dedupe, persistent path references and protected app storage.
+- Native: Android manifest configured by `scripts/configure_android_audio.ps1` for generated Android native projects; iOS background mode needs `UIBackgroundModes = audio` once building on macOS.
+- Testing: `flutter analyze`, `flutter test`, real-device QA per `docs/qa.md`.
 
-- Ink `#0B0D12`, Slate `#171A21`, Raised `#242832`
-- Ivory `#F4EFE7`, Mist `#A8ADB8`, Champagne `#D8B78B`, Dusk `#A79AC6`
-- Intended typography: **Instrument Serif** for editorial headings and **Manrope** for UI. Current code renders system fallbacks until fonts are installed locally; see `assets/fonts/README.md`.
-- Motion targets are specified for upcoming interactions in `docs/design.md`. The current scene has no continuous animation, reducing battery use.
+**Status:** Source changes have not been compiled or tested on a device in the AI execution environment. Follow validation instructions before declaring M2 done.
 
-## Git setup
-
-```bash
-git init
-git add .
-git commit -m "feat: establish auvoryn milestone 1 foundation"
-```
-
-No GitHub repository was created or modified by this source package.
-
-## Documentation
-
-Read [Architecture](docs/architecture.md), [Design](docs/design.md), [Roadmap](docs/roadmap.md), and [QA](docs/qa.md).
+See `docs/milestone_2.md`, `docs/architecture.md`, and `docs/roadmap.md` for implementation and acceptance requirements.

@@ -1,6 +1,8 @@
 import 'package:auvoryn/app/routing/navigation_shell.dart';
 import 'package:auvoryn/features/home_room/presentation/room_page.dart';
 import 'package:auvoryn/features/library/presentation/library_page.dart';
+import 'package:auvoryn/features/library/presentation/playlist_detail_page.dart';
+import 'package:auvoryn/features/music/presentation/now_playing_page.dart';
 import 'package:auvoryn/features/memories/presentation/memories_page.dart';
 import 'package:auvoryn/features/settings/presentation/settings_page.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +21,13 @@ final appRouter = GoRouter(
         ),
         StatefulShellBranch(
           routes: [
-            GoRoute(path: '/library', builder: (_, _) => const LibraryPage()),
+            GoRoute(
+              path: '/library', builder: (_, _) => const LibraryPage(),
+              routes: [
+                GoRoute(path: 'playlist/:id', builder: (_, state) =>
+                    PlaylistDetailPage(playlistId: state.pathParameters['id']!)),
+              ],
+            ),
           ],
         ),
         StatefulShellBranch(
@@ -28,6 +36,10 @@ final appRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/now-playing',
+      builder: (context, state) => const NowPlayingPage(),
     ),
     GoRoute(
       path: '/settings',

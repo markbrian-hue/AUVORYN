@@ -1,4 +1,5 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
+import 'package:auvoryn/features/music/presentation/mini_player.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,7 +12,11 @@ class NavigationShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: shell,
-      bottomNavigationBar: Container(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const MiniPlayer(),
+          Container(
         decoration: const BoxDecoration(
           color: AuvorynColors.slate,
           border: Border(
@@ -49,6 +54,8 @@ class NavigationShell extends StatelessWidget {
             ),
           ),
         ),
+          ),
+        ],
       ),
     );
   }

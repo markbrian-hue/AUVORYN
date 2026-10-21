@@ -38,3 +38,17 @@ Then manually inspect Room navigation, all atmosphere options, lamp state persis
 - Local fonts are not bundled, so typography falls back until installed.
 - System-level reduced motion is not yet connected to future transition animations; the current room painter is static.
 - Platform shells are generated on the developer's machine, preserving handcrafted sources.
+
+## Milestone 2 player checks (on real Android hardware/emulator)
+
+1. `flutter pub get`, `flutter analyze`, `flutter test` complete with no failures.
+2. Run `./scripts/configure_android_audio.ps1` in PowerShell after native directories are generated.
+3. Launch AUVORYN with **airplane mode on**. Import 2-3 owned MP3/M4A files; play, pause, seek, skip.
+4. Pause, lock the screen, resume using notification/media controls; test wired/Bluetooth unplug and call interruptions.
+5. Favorite a song, create playlist, add/remove songs, restart app. All selections should survive.
+6. Restart during paused playback: last queue and approximate position should restore without autoplay.
+7. Import the same audio twice and verify checksum dedupe; import a malformed file to observe error.
+8. Verify music continues while navigating the room, opening Memories, and backgrounding.
+9. Test denied picker access, low storage, long filenames, non-ASCII filenames.
+
+**Limitations:** v0.2 reads titles from filenames instead of embedded metadata; selecting music is picker-based (no full-device media library scan). Artwork extraction, detailed listening history, and auto-indexing are not implemented. No real-device tests have been executed by the AI authoring environment.
