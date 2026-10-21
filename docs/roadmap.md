@@ -19,13 +19,13 @@ Project structure, Riverpod, local settings, GoRouter nav, visual tokens, origin
 
 Now Playing, mini-player, editorial library layout, animated transitions, deep links, accessibility semantics, large text, reduced motion.
 
-## M4 · Room interaction
+## M4 · Room interaction — source implemented, device validation pending
 
-Connection to the actual single audio state stream, vinyl and stereo responses, richer offline art, optimized geometry/layering.
+[x] Existing single audio state wired to room vinyl, turntable and speaker controls. [x] Five accessible object hotspots. [x] Independently painted offline rain and record animation, with reduced-motion/lifecycle suspension. [ ] Validate rendering, frame time and accessibility on devices. See `docs/milestone_4.md`.
 
 ## M5 · Atmosphere
 
-Offline licensed ambience sounds, rain/weather motion, separate audio mixing controls, performance settings.
+Offline licensed ambience sounds, weather presets/light polish, separate audio mixing controls, performance settings.
 
 ## M6 · Personalization & memories
 
