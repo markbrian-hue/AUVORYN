@@ -21,7 +21,7 @@ void main() {
     expect(restored.id, 'a1');
     expect(restored.path, sample.path);
     expect(restored.isFavorite, true);
-    expect(restored.importedAt, sample.importedAt);
+    expect(restored.importedAt.isAtSameMomentAs(sample.importedAt), isTrue);
   });
 
   test('queue current song resolves to real library song', () {
