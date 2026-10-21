@@ -468,18 +468,19 @@ class _NowPlayingPageState extends ConsumerState<NowPlayingPage> {
                   buildDefaultDragHandles: false,
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   itemCount: music.queueIds.length,
-                  onReorder: (from, to) {
-                    if (music.shuffle) return;
-                    if (to > from) to--;
+                  onReorderItem: (from, to) {
+                    if (music.shuffle) {
+                      return;
+                    }
                     controller.moveQueuedTrack(from, to);
                   },
                   itemBuilder: (context, index) {
                     final id = music.queueIds[index];
                     final song = songs[id];
                     final current = index == music.currentIndex;
-                    if (song == null) return SizedBox(
-                      key: ValueKey('missing_$index'),
-                    );
+                    if (song == null) {
+                      return SizedBox(key: ValueKey('missing_$index'));
+                    }
                     return Material(
                       key: ValueKey('queue_$id'),
                       color: current ? AuvorynColors.raised : Colors.transparent,
