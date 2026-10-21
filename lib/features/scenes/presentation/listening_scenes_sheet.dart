@@ -140,6 +140,7 @@ class ListeningScenesSheet extends ConsumerWidget {
               onApply: () async {
                 final ok = await ref.read(listeningScenesProvider.notifier)
                     .apply(scene);
+                if (!context.mounted) return;
                 _message(context,
                     ok ? '${scene.name} is ready. Music stays as it was.' :
                     'Unable to update room settings.');
@@ -147,6 +148,7 @@ class ListeningScenesSheet extends ConsumerWidget {
               onDuplicate: busy || data.error != null ? null : () async {
                 final ok = await ref.read(listeningScenesProvider.notifier)
                     .duplicate(scene);
+                if (!context.mounted) return;
                 _message(context, ok ? 'Saved a customizable copy.' :
                     'Unable to save a copy.');
               },
@@ -174,6 +176,7 @@ class ListeningScenesSheet extends ConsumerWidget {
               onApply: () async {
                 final ok = await ref.read(listeningScenesProvider.notifier)
                     .apply(scene);
+                if (!context.mounted) return;
                 _message(context, ok ? '${scene.name} applied. Music unchanged.' :
                     'Unable to update room settings.');
               },
@@ -181,12 +184,14 @@ class ListeningScenesSheet extends ConsumerWidget {
               onReplace: busy ? null : () async {
                 final ok = await ref.read(listeningScenesProvider.notifier)
                     .updateFromRoom(scene);
+                if (!context.mounted) return;
                 _message(context, ok ? 'Saved the current room to this scene.' :
                     'Unable to update scene.');
               },
               onDuplicate: busy ? null : () async {
                 final ok = await ref.read(listeningScenesProvider.notifier)
                     .duplicate(scene);
+                if (!context.mounted) return;
                 _message(context, ok ? 'Scene duplicated.' :
                     'Unable to duplicate scene.');
               },
