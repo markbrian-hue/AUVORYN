@@ -1,153 +1,347 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
+import 'package:auvoryn/core/widgets/vinyl_artwork.dart';
 import 'package:auvoryn/features/music/application/music_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class NowPlayingPage extends ConsumerWidget {
+class NowPlayingPage extends ConsumerStatefulWidget {
   const NowPlayingPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NowPlayingPage> createState() => _NowPlayingPageState();
+}
+
+class _NowPlayingPageState extends ConsumerState<NowPlayingPage> {
+  double? _scrubbingMs;
+  String? _trackId;
+
+  @override
+  Widget build(BuildContext context) {
     final music = ref.watch(musicProvider);
     final controller = ref.read(musicProvider.notifier);
     final song = music.currentSong;
     if (song == null) {
-      return Scaffold(appBar: AppBar(title: const Text('Now playing')),
-        body: const Center(child: Text('Choose a track from your library.')));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Now playing')),
+        body: const Center(child: Text('Choose a track from your library.')),
+      );
     }
+
+    if (_trackId != song.id) {
+      _trackId = song.id;
+      _scrubbingMs = null;
+    }
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final totalMs = music.duration.inMilliseconds.toDouble();
+    final maxMs = totalMs > 0 ? totalMs : 1.0;
+    final currentMs = (_scrubbingMs ?? music.position.inMilliseconds.toDouble())
+        .clamp(0.0, maxMs);
+    final remaining = music.duration - Duration(milliseconds: currentMs.round());
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AuvorynColors.ink,
-        leading: IconButton(icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 31),
-          onPressed: () => Navigator.of(context).pop(), tooltip: 'Close player'),
-        title: const Text('NOW PLAYING', style: TextStyle(fontSize: 11, letterSpacing: 2.5)),
-        centerTitle: true,
-      ),
-      body: SafeArea(child: LayoutBuilder(builder: (context, constraints) {
-        final artwork = (constraints.maxHeight * .43).clamp(160.0, 340.0);
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(27, 12, 27, 26),
-          children: [
-            const SizedBox(height: 12),
-            Center(child: Container(
-              width: artwork, height: artwork,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(26),
-                gradient: const LinearGradient(begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF292D3A), Color(0xFF584954), Color(0xFF15171E)]),
-                boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 34, offset: Offset(0, 18))],
-              ),
-              child: Stack(alignment: Alignment.center, children: [
-                Container(
-                  width: artwork * .68, height: artwork * .68,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF101116),
-                    border: Border.all(color: const Color(0xFF373843), width: 7),
-                  ),
-                  child: Center(child: Container(
-                    width: artwork * .25, height: artwork * .25,
-                    decoration: const BoxDecoration(shape: BoxShape.circle,
-                      color: AuvorynColors.champagne),
-                    child: const Icon(Icons.music_note_rounded, color: AuvorynColors.ink),
-                  )),
-                ),
-                Positioned(bottom: 14, right: 18, child: Text('auvoryn',
-                  style: TextStyle(color: AuvorynColors.ivory.withValues(alpha: .65),
-                    letterSpacing: 2, fontSize: 12))),
-              ]),
-            )),
-            const SizedBox(height: 32),
-            Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(song.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.headlineMedium),
-                const SizedBox(height: 6),
-                Text(song.artist, style: const TextStyle(color: AuvorynColors.mist)),
-              ])),
-              IconButton(
-                onPressed: () => controller.toggleFavorite(song),
-                tooltip: song.isFavorite ? 'Remove favorite' : 'Add favorite',
-                icon: Icon(song.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  color: song.isFavorite ? AuvorynColors.champagne : AuvorynColors.mist),
-              ),
-            ]),
-            const SizedBox(height: 24),
-            SliderTheme(data: SliderTheme.of(context).copyWith(
-              trackHeight: 3, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
-            ), child: Slider(
-              value: music.duration.inMilliseconds == 0 ? 0 :
-                music.position.inMilliseconds.toDouble().clamp(0.0, music.duration.inMilliseconds.toDouble()).toDouble(),
-              max: music.duration.inMilliseconds > 0 ? music.duration.inMilliseconds.toDouble() : 1,
-              onChanged: music.duration.inMilliseconds <= 0 ? null :
-                (value) => controller.seek(Duration(milliseconds: value.round())),
-            )),
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Text(_time(music.position)), Text(_time(music.duration))],
-            )),
-            const SizedBox(height: 13),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              IconButton(
-                onPressed: controller.toggleShuffle,
-                icon: Icon(Icons.shuffle_rounded,
-                  color: music.shuffle ? AuvorynColors.champagne : AuvorynColors.mist),
-                tooltip: 'Shuffle',
-              ),
-              IconButton(iconSize: 35, onPressed: controller.previous,
-                tooltip: 'Previous track', icon: const Icon(Icons.skip_previous_rounded)),
-              Material(color: AuvorynColors.champagne, shape: const CircleBorder(),
-                child: IconButton(
-                  key: const Key('player_toggle'),
-                  iconSize: 41,
-                  constraints: const BoxConstraints(minWidth: 76, minHeight: 76),
-                  color: AuvorynColors.ink,
-                  onPressed: controller.togglePlay,
-                  tooltip: music.playing ? 'Pause' : 'Play',
-                  icon: Icon(music.playing ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                ),
-              ),
-              IconButton(iconSize: 35, onPressed: controller.next,
-                tooltip: 'Next track', icon: const Icon(Icons.skip_next_rounded)),
-              IconButton(
-                onPressed: controller.cycleRepeat,
-                tooltip: 'Repeat mode',
-                icon: Icon(music.repeat.name == 'one' ? Icons.repeat_one_rounded : Icons.repeat_rounded,
-                  color: music.repeat.name == 'off' ? AuvorynColors.mist : AuvorynColors.champagne),
-              ),
-            ]),
-            const SizedBox(height: 25),
-            ExpansionTile(
-              title: Text('Up next · ${music.queueIds.length} tracks',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-              iconColor: AuvorynColors.champagne,
+      backgroundColor: AuvorynColors.ink,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -.58),
+            radius: 1.28,
+            colors: [Color(0xFF34303B), Color(0xFF181923), AuvorynColors.ink],
+            stops: [0, .53, 1],
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(builder: (context, constraints) {
+            final diameter = (constraints.maxWidth - 104)
+                .clamp(172.0, 324.0)
+                .toDouble();
+            return ListView(
+              key: const PageStorageKey('now_playing_scroll'),
+              padding: const EdgeInsets.fromLTRB(24, 5, 24, 32),
               children: [
-                for (var i = 0; i < music.queueIds.length; i++)
-                  Builder(builder: (context) {
-                    final match = music.songs.where((s) => s.id == music.queueIds[i]);
-                    if (match.isEmpty) return const SizedBox.shrink();
-                    return ListTile(
-                      dense: true, selected: i == music.currentIndex,
-                      title: Text(match.first.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      leading: Icon(i == music.currentIndex ? Icons.graphic_eq_rounded : Icons.music_note_outlined),
-                      onTap: () => controller.jumpTo(i),
-                    );
-                  }),
+                Row(
+                  children: [
+                    IconButton(
+                      key: const Key('player_close'),
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Close player',
+                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 30),
+                    ),
+                    const Expanded(
+                      child: Column(children: [
+                        Text('AUVORYN / LISTENING',
+                          style: TextStyle(color: AuvorynColors.mist,
+                            fontSize: 10, letterSpacing: 2.3)),
+                        SizedBox(height: 3),
+                        Text('Now playing',
+                          style: TextStyle(color: AuvorynColors.ivory,
+                            fontWeight: FontWeight.w600, fontSize: 13)),
+                      ]),
+                    ),
+                    IconButton(
+                      tooltip: 'Open playback queue',
+                      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                      onPressed: () => _openQueue(context),
+                      icon: const Icon(Icons.queue_music_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: diameter + 34),
+                    child: AnimatedSwitcher(
+                      duration: reduceMotion ? Duration.zero : AuvorynMotion.normal,
+                      switchInCurve: Curves.easeOutCubic,
+                      child: Container(
+                        key: ValueKey(song.id),
+                        width: diameter + 26,
+                        height: diameter + 30,
+                        alignment: Alignment.center,
+                        child: VinylArtwork(
+                          title: song.title,
+                          size: diameter,
+                          playing: music.playing,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 9),
+                Center(child: Text('YOUR PRIVATE PRESSING',
+                  style: TextStyle(color: AuvorynColors.champagne.withValues(alpha: .82),
+                    fontSize: 10, letterSpacing: 2.8))),
+                const SizedBox(height: 29),
+                Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: reduceMotion ? Duration.zero :
+                            const Duration(milliseconds: 220),
+                        child: Text(song.title,
+                          key: ValueKey('title_${song.id}'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontSize: 27, height: 1.2),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AuvorynColors.mist, fontSize: 15)),
+                    ],
+                  )),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    tooltip: song.isFavorite ? 'Remove favorite' : 'Add to favorites',
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                    onPressed: () => controller.toggleFavorite(song),
+                    icon: Icon(song.isFavorite ? Icons.favorite_rounded :
+                      Icons.favorite_outline_rounded,
+                      color: song.isFavorite ? AuvorynColors.champagne : AuvorynColors.ivory),
+                  ),
+                ]),
+                const SizedBox(height: 25),
+                Semantics(
+                  label: 'Playback position',
+                  value: '${_time(Duration(milliseconds: currentMs.round()))} of ${_time(music.duration)}',
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 17),
+                    ),
+                    child: Slider(
+                      key: const Key('player_seek'),
+                      value: currentMs,
+                      max: maxMs,
+                      onChanged: totalMs <= 0 ? null : (value) =>
+                        setState(() => _scrubbingMs = value),
+                      onChangeEnd: totalMs <= 0 ? null : (value) {
+                        setState(() => _scrubbingMs = null);
+                        controller.seek(Duration(milliseconds: value.round()));
+                      },
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text(_time(Duration(milliseconds: currentMs.round())),
+                      style: const TextStyle(color: AuvorynColors.mist, fontSize: 12,
+                        fontFeatures: [FontFeature.tabularFigures()])),
+                    Text('-${_time(remaining.isNegative ? Duration.zero : remaining)}',
+                      style: const TextStyle(color: AuvorynColors.mist, fontSize: 12,
+                        fontFeatures: [FontFeature.tabularFigures()])),
+                  ]),
+                ),
+                const SizedBox(height: 24),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  _TransportButton(
+                    tooltip: music.shuffle ? 'Disable shuffle' : 'Enable shuffle',
+                    onPressed: controller.toggleShuffle,
+                    icon: Icons.shuffle_rounded,
+                    active: music.shuffle,
+                  ),
+                  _TransportButton(
+                    tooltip: 'Previous track',
+                    onPressed: controller.previous,
+                    icon: Icons.skip_previous_rounded,
+                    size: 34,
+                  ),
+                  Material(
+                    shape: const CircleBorder(),
+                    color: AuvorynColors.champagne,
+                    child: IconButton(
+                      key: const Key('player_toggle'),
+                      tooltip: music.playing ? 'Pause' : 'Play',
+                      onPressed: music.restoring ? null : controller.togglePlay,
+                      constraints: const BoxConstraints(minWidth: 78, minHeight: 78),
+                      color: AuvorynColors.ink,
+                      iconSize: 40,
+                      icon: Icon(music.playing ? Icons.pause_rounded :
+                        Icons.play_arrow_rounded),
+                    ),
+                  ),
+                  _TransportButton(
+                    tooltip: 'Next track',
+                    onPressed: controller.next,
+                    icon: Icons.skip_next_rounded,
+                    size: 34,
+                  ),
+                  _TransportButton(
+                    tooltip: 'Repeat ${music.repeat.name}',
+                    onPressed: controller.cycleRepeat,
+                    icon: music.repeat.name == 'one' ?
+                      Icons.repeat_one_rounded : Icons.repeat_rounded,
+                    active: music.repeat.name != 'off',
+                  ),
+                ]),
+                const SizedBox(height: 31),
+                Material(
+                  color: AuvorynColors.slate.withValues(alpha: .93),
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    key: const Key('open_queue'),
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => _openQueue(context),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+                      child: Row(children: [
+                        const Icon(Icons.queue_music_rounded,
+                          color: AuvorynColors.champagne, size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Up next', style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 14)),
+                            Text('${music.queueIds.length} tracks in your queue',
+                              style: const TextStyle(color: AuvorynColors.mist,
+                                fontSize: 12)),
+                          ],
+                        )),
+                        const Icon(Icons.chevron_right_rounded,
+                          color: AuvorynColors.mist),
+                      ]),
+                    ),
+                  ),
+                ),
+                if (music.error != null) Padding(
+                  padding: const EdgeInsets.only(top: 17),
+                  child: Text(music.error!,
+                    style: const TextStyle(color: Color(0xFFFF9F9A))),
+                ),
               ],
-            ),
-            if (music.error != null) Padding(padding: const EdgeInsets.only(top: 16),
-              child: Text(music.error!, style: const TextStyle(color: Color(0xFFFF9F9A)))),
-          ],
-        );
-      })),
+            );
+          }),
+        ),
+      ),
     );
   }
 
-  static String _time(Duration d) {
-    final minutes = d.inMinutes;
-    final seconds = d.inSeconds.remainder(60);
+  void _openQueue(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => Consumer(builder: (context, ref, _) {
+        final music = ref.watch(musicProvider);
+        final indexed = {for (final song in music.songs) song.id: song};
+        return SafeArea(
+          top: false,
+          child: FractionallySizedBox(
+            heightFactor: .72,
+            child: Column(children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                child: Row(children: [
+                  Expanded(child: Text('Your queue',
+                    style: AppTheme.editorial(size: 31))),
+                  Text('${music.queueIds.length} tracks',
+                    style: const TextStyle(color: AuvorynColors.mist)),
+                ]),
+              ),
+              Expanded(child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                itemCount: music.queueIds.length,
+                itemBuilder: (context, index) {
+                  final track = indexed[music.queueIds[index]];
+                  if (track == null) return const SizedBox.shrink();
+                  final current = index == music.currentIndex;
+                  return ListTile(
+                    key: Key('queue_item_$index'),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                    leading: Icon(current ? Icons.graphic_eq_rounded :
+                      Icons.album_outlined,
+                      color: current ? AuvorynColors.champagne : AuvorynColors.mist),
+                    title: Text(track.title, maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                    subtitle: Text(track.artist, maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                    selected: current,
+                    onTap: () async {
+                      Navigator.of(sheetContext).pop();
+                      await ref.read(musicProvider.notifier).jumpTo(index);
+                    },
+                  );
+                },
+              )),
+            ]),
+          ),
+        );
+      }),
+    );
+  }
+
+  static String _time(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60);
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
+}
+
+class _TransportButton extends StatelessWidget {
+  const _TransportButton({
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+    this.active = false,
+    this.size = 23,
+  });
+
+  final String tooltip;
+  final VoidCallback onPressed;
+  final IconData icon;
+  final bool active;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: tooltip,
+    onPressed: onPressed,
+    icon: Icon(icon, size: size,
+      color: active ? AuvorynColors.champagne : AuvorynColors.ivory),
+    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+  );
 }
