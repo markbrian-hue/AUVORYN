@@ -16,6 +16,7 @@ class RoomScene extends StatefulWidget {
     required this.onSpeakerTap,
     this.hasTrack = false,
     this.isPlaying = false,
+    this.initiallyShowControls = true,
     super.key,
   });
   final RoomSettings settings;
@@ -26,6 +27,7 @@ class RoomScene extends StatefulWidget {
   final VoidCallback onSpeakerTap;
   final bool hasTrack;
   final bool isPlaying;
+  final bool initiallyShowControls;
   @override
   State<RoomScene> createState() => _RoomSceneState();
 }
@@ -59,6 +61,7 @@ class _RoomSceneState extends State<RoomScene>
   @override
   void initState() {
     super.initState();
+    _showControls = widget.initiallyShowControls;
     _foreground =
         WidgetsBinding.instance.lifecycleState == null ||
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
