@@ -15,6 +15,9 @@ jobs:
           cache: true
       - name: Bootstrap generated Android platform
         run: flutter create --platforms=android .
+      - name: Remove generated Flutter starter test
+        run: |
+          if grep -q 'MyApp' test/widget_test.dart 2>/dev/null; then rm test/widget_test.dart; fi
       - name: Resolve packages
         run: flutter pub get
       - name: Analyze
