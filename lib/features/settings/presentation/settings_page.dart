@@ -89,10 +89,19 @@ class SettingsPage extends ConsumerWidget {
                 height: 1.6,
               ),
             ),
+            const SizedBox(height: 26),
+            const _SectionLabel('YOUR DATA'),
+            const SizedBox(height: 12),
+            _SettingsTile(
+              title: 'Privacy & storage',
+              subtitle: 'Your imported files, history and offline privacy',
+              icon: Icons.shield_outlined,
+              onTap: () => context.push('/about'),
+            ),
             const SizedBox(height: 40),
             const Center(
               child: Text(
-                'AUVORYN  •  PERSONAL 0.6.0',
+                'AUVORYN  •  RELEASE QA 0.7.0',
                 style: TextStyle(
                   fontSize: 10,
                   letterSpacing: 1.5,
