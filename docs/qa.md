@@ -1,54 +1,56 @@
-# AUVORYN — Validation report
+# AUVORYN — QA status and device validation
 
-## Checks executed in authoring workspace
+AUVORYN 0.7.0 is a **release QA candidate**, not a production signed Android or
+iOS release. The user confirmed the previous 0.6.0 functionality on the
+Android emulator; this does **not** establish Bluetooth behavior, battery
+impact, app-store eligibility or performance on physical phones.
 
-- Verified requested source file exists and its AUVORYN development requirements were read.
-- Checked for an existing AUVORYN GitHub repository in connected repositories; none matched.
-- Checked Flutter and Dart executables with `command -v`; neither is available.
-- Produced the Milestone 1 source files, model/widget test source, a bootstrap script and documentation.
-- Ran local source-tree validation for missing relative imports and required files (see final response for results).
+## Automated checks
 
-## Checks not executed
+Every pull request must pass these GitHub Actions steps:
 
-- `flutter pub get`
-- `dart format .`
-- `flutter analyze`
-- `flutter test`
-- `flutter run`
-- Android/iOS build or any real-device QA
-- FPS/memory/battery/audio checks
+1. Generate the Android Flutter platform shell.
+2. Run `scripts/configure_android_audio.ps1` to configure the correct
+   `AudioServiceActivity` launcher inheritance and media declarations.
+3. Resolve dependencies and execute `flutter analyze` and `flutter test`.
+4. Compile a **debug-signed** Android APK; verify it is nonempty, then upload
+   it as a short-lived GitHub Actions QA artifact.
 
-**No compilation, rendered emulator inspection, or test-pass claim is made.**
+Results belong to the particular CI run. A source file or workflow passing
+static inspection is **not** the same as having built or tested on hardware.
 
-## To validate on a Windows developer machine
+## Windows validation
+
+From the current AUVORYN checkout, without uninstalling the installed app:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap_windows.ps1
-flutter devices
+git pull origin main
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\validate_android.ps1"
 flutter run
 ```
 
-Then manually inspect Room navigation, all atmosphere options, lamp state persistence on restart, Settings switches, and iOS-style accessibility scale and safe-area behavior. For iOS, use macOS with Xcode and a supported device/simulator.
+The script checks the current Android project, applies the existing audio
+service configuration, runs package resolution, analysis, tests and builds a
+debug QA APK. It does not clean app data or overwrite a working native
+project. For a local release **compile** check add
+`-BuildReleaseCandidate`; this does not provision production signing.
 
-## Known limitations
+## Manual QA
 
-- This is a source foundation, not a release APK/IPA.
-- No real music import, background audio, playing state, audio-reactive vinyl or history tracking.
-- Room weather visuals are static representations, not animated rain.
-- Local fonts are not bundled, so typography falls back until installed.
-- System-level reduced motion is not yet connected to future transition animations; the current room painter is static.
-- Platform shells are generated on the developer's machine, preserving handcrafted sources.
+Use [release_readiness.md](release_readiness.md) as the acceptance matrix.
+Specifically test offline playback, import deduplication and failures,
+playlists/queue restored after upgrade, artwork, ambient mixing, history
+clearing, reduced motion, screen readers, Android notifications and
+interruptions. Test Android version and device model combinations.
+Record device-specific evidence and performance profiling results rather
+than assigning a pass based on emulators alone.
 
-## Milestone 2 player checks (on real Android hardware/emulator)
+## Known release blockers
 
-1. `flutter pub get`, `flutter analyze`, `flutter test` complete with no failures.
-2. Run `./scripts/configure_android_audio.ps1` in PowerShell after native directories are generated.
-3. Launch AUVORYN with **airplane mode on**. Import 2-3 owned MP3/M4A files; play, pause, seek, skip.
-4. Pause, lock the screen, resume using notification/media controls; test wired/Bluetooth unplug and call interruptions.
-5. Favorite a song, create playlist, add/remove songs, restart app. All selections should survive.
-6. Restart during paused playback: last queue and approximate position should restore without autoplay.
-7. Import the same audio twice and verify checksum dedupe; import a malformed file to observe error.
-8. Verify music continues while navigating the room, opening Memories, and backgrounding.
-9. Test denied picker access, low storage, long filenames, non-ASCII filenames.
-
-**Limitations:** v0.2 reads titles from filenames instead of embedded metadata; selecting music is picker-based (no full-device media library scan). Artwork extraction, detailed listening history, and auto-indexing are not implemented. No real-device tests have been executed by the AI authoring environment.
+- Generated Android application ID may still be `com.example.auvoryn`.
+- Release keystore, permanent app icon, signed AAB and store setup are not
+  provided in this source-only repository.
+- App-private imported songs have no export/backup workflow; uninstall or
+  app-data clearing can erase them.
+- iOS requires macOS/Xcode build, entitlements, signing and testing.
+- Real-device performance, battery and audio-focus validation remain open.
