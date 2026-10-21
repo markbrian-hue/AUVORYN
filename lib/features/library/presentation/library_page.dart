@@ -1,129 +1,287 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/core/widgets/auvoryn_logo.dart';
+import 'package:auvoryn/features/music/application/music_controller.dart';
+import 'package:auvoryn/features/music/domain/song.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class LibraryPage extends StatelessWidget {
+enum LibrarySection { songs, favorites, playlists }
+
+class LibraryPage extends ConsumerStatefulWidget {
   const LibraryPage({super.key});
 
   @override
+  ConsumerState<LibraryPage> createState() => _LibraryPageState();
+}
+
+class _LibraryPageState extends ConsumerState<LibraryPage> {
+  LibrarySection _section = LibrarySection.songs;
+  String _query = '';
+
+  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListView(
-        key: const PageStorageKey('library_scroll'),
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 30),
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const AuvorynLogo(),
-              IconButton(
-                tooltip: 'Settings',
-                onPressed: () => context.push('/settings'),
-                icon: const Icon(Icons.tune_rounded),
-                style: IconButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  backgroundColor: AuvorynColors.slate,
-                ),
+    final music = ref.watch(musicProvider);
+    final controller = ref.read(musicProvider.notifier);
+    final query = _query.trim().toLowerCase();
+    final displayed = music.songs.where((s) {
+      if (_section == LibrarySection.favorites && !s.isFavorite) return false;
+      return s.title.toLowerCase().contains(query) ||
+        s.artist.toLowerCase().contains(query) || s.fileName.toLowerCase().contains(query);
+    }).toList();
+
+    return SafeArea(child: ListView(
+      key: const PageStorageKey('library_scroll'),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+      children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const AuvorynLogo(),
+          IconButton(
+            tooltip: 'Settings', onPressed: () => context.push('/settings'),
+            icon: const Icon(Icons.tune_rounded),
+            style: IconButton.styleFrom(minimumSize: const Size(48, 48),
+              backgroundColor: AuvorynColors.slate),
+          ),
+        ]),
+        const SizedBox(height: 30),
+        const Text('YOUR COLLECTION  /  002',
+          style: TextStyle(color: AuvorynColors.champagne, fontSize: 11, letterSpacing: 1.8)),
+        const SizedBox(height: 10),
+        Text('Every song, yours.', style: AppTheme.editorial(size: 39)),
+        const SizedBox(height: 12),
+        Text('${music.songs.length} songs, safely kept on this device.',
+          style: const TextStyle(color: AuvorynColors.mist, fontSize: 14)),
+        const SizedBox(height: 20),
+        SizedBox(width: double.infinity, child: FilledButton.icon(
+          key: const Key('import_music'),
+          onPressed: music.loading || music.restoring ? null : () async {
+            final count = await controller.importMusic();
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+              count > 0 ? 'Imported $count song${count == 1 ? '' : 's'} for offline listening.'
+                : 'No new music was imported. Check for duplicates or try again.',
+            )));
+          },
+          icon: music.loading ? const SizedBox(height: 18, width: 18,
+            child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add_rounded),
+          label: Text(music.loading ? 'IMPORTING…' : 'IMPORT MUSIC'),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(0, 53),
+            backgroundColor: AuvorynColors.champagne, foregroundColor: AuvorynColors.ink,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          ),
+        )),
+        if (music.error != null) Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Text(music.error!, style: const TextStyle(color: Color(0xFFFF9F9A), fontSize: 13)),
+        ),
+        const SizedBox(height: 22),
+        SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+          for (final section in LibrarySection.values)
+            Padding(padding: const EdgeInsets.only(right: 8), child: ChoiceChip(
+              label: Text(switch (section) {
+                LibrarySection.songs => 'Songs',
+                LibrarySection.favorites => 'Favorites',
+                LibrarySection.playlists => 'Playlists',
+              }),
+              selected: _section == section,
+              onSelected: (_) => setState(() => _section = section),
+            )),
+        ])),
+        const SizedBox(height: 21),
+        if (_section != LibrarySection.playlists) ...[
+          TextField(
+            key: const Key('search_music'),
+            onChanged: (value) => setState(() => _query = value),
+            decoration: InputDecoration(
+              hintText: 'Search your music',
+              prefixIcon: const Icon(Icons.search_rounded),
+              filled: true, fillColor: AuvorynColors.slate,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(17),
+                borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            ),
+          ),
+          const SizedBox(height: 19),
+          if (displayed.isNotEmpty) Row(children: [
+            Expanded(child: Text('${displayed.length} TRACKS',
+              style: const TextStyle(color: AuvorynColors.mist,
+                fontSize: 11, letterSpacing: 1.5))),
+            TextButton.icon(onPressed: () async {
+              await controller.playSongs(displayed);
+              if (context.mounted && ref.read(musicProvider).currentSong != null) {
+                context.push('/now-playing');
+              }
+            }, icon: const Icon(Icons.play_arrow_rounded, size: 19),
+              label: const Text('Play all')),
+          ]),
+          if (displayed.isEmpty)
+            _EmptyCollection(
+              icon: _section == LibrarySection.favorites ? Icons.favorite_outline_rounded : Icons.album_outlined,
+              title: music.songs.isEmpty ? 'Your soundtrack starts here' : 'Nothing in this collection',
+              detail: music.songs.isEmpty
+                ? 'Import music from your device. Selected songs are copied into AUVORYN for offline listening.'
+                : _section == LibrarySection.favorites
+                  ? 'Tap the heart beside a track to save your favorites.'
+                  : 'Try a different search.',
+            )
+          else
+            for (var i = 0; i < displayed.length; i++)
+              SongRow(song: displayed[i], onTap: () async {
+                await controller.playSongs(displayed, startIndex: i);
+                if (context.mounted && ref.read(musicProvider).currentSong != null) {
+                  context.push('/now-playing');
+                }
+              }),
+        ] else ...[
+          Row(children: [
+            const Expanded(child: Text('PERSONAL PLAYLISTS',
+              style: TextStyle(letterSpacing: 1.4, fontSize: 11, color: AuvorynColors.mist))),
+            TextButton.icon(onPressed: () => _createPlaylist(context),
+              icon: const Icon(Icons.add_rounded), label: const Text('Create')),
+          ]),
+          const SizedBox(height: 12),
+          if (music.playlists.isEmpty)
+            const _EmptyCollection(icon: Icons.queue_music_rounded,
+              title: 'Make it yours',
+              detail: 'Create a playlist and add your favorite local songs.')
+          else
+            for (final playlist in music.playlists)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+                leading: const _SongArtwork(icon: Icons.queue_music_rounded),
+                title: Text(playlist.name),
+                subtitle: Text('${playlist.songIds.length} tracks',
+                  style: const TextStyle(color: AuvorynColors.mist)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push('/library/playlist/${playlist.id}'),
               ),
-            ],
-          ),
-          const SizedBox(height: 36),
-          const Text(
-            'YOUR COLLECTION  /  002',
-            style: TextStyle(
-              color: AuvorynColors.champagne,
-              fontSize: 11,
-              letterSpacing: 1.8,
-            ),
-          ),
-          const SizedBox(height: 11),
-          Text('Every song, yours.', style: AppTheme.editorial(size: 39)),
-          const SizedBox(height: 11),
-          const Text(
-            'Your library will live on this device. Your listening space will work offline.',
-            style: TextStyle(
-              fontSize: 15,
-              color: AuvorynColors.mist,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 45),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 39),
-            decoration: BoxDecoration(
-              color: AuvorynColors.slate,
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(
-                  width: 88,
-                  height: 88,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: AuvorynColors.raised,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.album_outlined,
-                      color: AuvorynColors.champagne,
-                      size: 42,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 21),
-                Text(
-                  'A collection waiting to happen',
-                  style: Theme.of(context).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Local music import and real playback are the next development milestone. '
-                  'No demo tracks or simulated playback are shown.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AuvorynColors.mist,
-                    height: 1.55,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 27),
-          Text(
-            'COMING WITH YOUR LIBRARY',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  letterSpacing: 1.6,
-                ),
-          ),
-          const SizedBox(height: 15),
-          const _FeatureRow(Icons.file_open_outlined, 'Import music stored on your device'),
-          const _FeatureRow(Icons.queue_music, 'Songs, artists, albums and playlists'),
-          const _FeatureRow(Icons.headphones_outlined, 'Reliable background audio playback'),
         ],
-      ),
-    );
+      ],
+    ));
+  }
+
+  Future<void> _createPlaylist(BuildContext context) async {
+    final name = await playlistNameDialog(context, title: 'New playlist');
+    if (name == null || !context.mounted) return;
+    try {
+      await ref.read(musicProvider.notifier).createPlaylist(name);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to create playlist: $error')),
+        );
+      }
+    }
   }
 }
 
-class _FeatureRow extends StatelessWidget {
-  const _FeatureRow(this.icon, this.label);
+Future<String?> playlistNameDialog(BuildContext context, {required String title,
+  String initialName = ''}) async {
+  final input = TextEditingController(text: initialName);
+  try {
+    return await showDialog<String>(context: context, builder: (context) => AlertDialog(
+      title: Text(title),
+      content: TextField(controller: input, autofocus: true,
+        maxLength: 60, decoration: const InputDecoration(labelText: 'Playlist name')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        FilledButton(onPressed: () {
+          if (input.text.trim().isNotEmpty) Navigator.pop(context, input.text.trim());
+        }, child: const Text('Save')),
+      ],
+    ));
+  } finally {
+    input.dispose();
+  }
+}
 
-  final IconData icon;
-  final String label;
+class SongRow extends ConsumerWidget {
+  const SongRow({required this.song, required this.onTap, super.key});
+  final Song song;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        child: Row(
-          children: [
-            Icon(icon, color: AuvorynColors.champagne, size: 21),
-            const SizedBox(width: 14),
-            Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
-          ],
-        ),
-      );
+  Widget build(BuildContext context, WidgetRef ref) => ListTile(
+    key: Key('song_${song.id}'),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 5),
+    leading: const _SongArtwork(icon: Icons.music_note_rounded),
+    title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+    subtitle: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis,
+      style: const TextStyle(fontSize: 12, color: AuvorynColors.mist)),
+    onTap: onTap,
+    trailing: PopupMenuButton<String>(
+      tooltip: 'Track actions',
+      onSelected: (action) {
+        if (action == 'favorite') {
+          ref.read(musicProvider.notifier).toggleFavorite(song);
+        } else if (action == 'playlist') {
+          showAddToPlaylistSheet(context, song);
+        }
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(value: 'favorite', child: Text(song.isFavorite ? 'Remove favorite' : 'Add to favorites')),
+        const PopupMenuItem(value: 'playlist', child: Text('Add to playlist…')),
+      ],
+    ),
+  );
 }
+
+class _SongArtwork extends StatelessWidget {
+  const _SongArtwork({required this.icon});
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 50, height: 50,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(13), color: AuvorynColors.raised,
+    ),
+    child: Icon(icon, color: AuvorynColors.champagne, size: 24),
+  );
+}
+
+class _EmptyCollection extends StatelessWidget {
+  const _EmptyCollection({required this.icon, required this.title, required this.detail});
+  final IconData icon;
+  final String title;
+  final String detail;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(top: 14), padding: const EdgeInsets.all(30),
+    decoration: BoxDecoration(color: AuvorynColors.slate,
+      borderRadius: BorderRadius.circular(24)),
+    child: Column(children: [
+      Icon(icon, size: 53, color: AuvorynColors.champagne),
+      const SizedBox(height: 20),
+      Text(title, style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
+      const SizedBox(height: 10),
+      Text(detail, textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 14, color: AuvorynColors.mist, height: 1.5)),
+    ]),
+  );
+}
+
+Future<void> showAddToPlaylistSheet(BuildContext context, Song song) =>
+  showModalBottomSheet<void>(
+    context: context, showDragHandle: true, isScrollControlled: true,
+    builder: (context) => Consumer(builder: (context, ref, _) {
+      final playlists = ref.watch(musicProvider).playlists;
+      return SafeArea(child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 10, 22, 25),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('Add to playlist', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 16),
+          if (playlists.isEmpty) const Text('Create a playlist from the Library tab first.'),
+          for (final playlist in playlists)
+            CheckboxListTile(
+              title: Text(playlist.name),
+              value: playlist.songIds.contains(song.id),
+              onChanged: (_) => ref.read(musicProvider.notifier)
+                .toggleSongInPlaylist(playlist, song),
+            ),
+        ]),
+      ));
+    }),
+  );

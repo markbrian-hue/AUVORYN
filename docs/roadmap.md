@@ -4,14 +4,14 @@
 
 Project structure, Riverpod, local settings, GoRouter nav, visual tokens, original Midnight Apartment scene, functional mood/lamp settings, honest empty states and authored test suite. **Blocked from build validation** by absent Flutter/Dart SDK in authoring environment.
 
-## M2 · Real offline playback — next
+## M2 · Real offline playback — source implemented; local build/device verification pending
 
-1. Define Drift schema/migrations and media models.
-2. Implement local file import on Android and document-picker import on iOS.
-3. Index metadata/artwork in an isolate where needed, preserving valid file references.
-4. Implement single just_audio playback coordinator, queues, playlists and favorites.
-5. Integrate audio_service, notifications, lock screen, headsets and interruptions.
-6. Verify airplane-mode playback and file-revocation recovery on real devices.
+1. [x] Define SQLite schema via sqflite and media models (Drift deferred).
+2. [x] Implement local file import via OS document picker with durable private copies.
+3. [ ] Embedded metadata/artwork parsing and scalable background indexing (future increment).
+4. [x] Implement single just_audio playback coordinator, queues, playlists and favorites.
+5. [x] Integrate just_audio_background (audio_service) and audio_session; [ ] verify notifications, lock screen, headsets and interruptions on device.
+6. [ ] Verify airplane-mode playback, missing files and recovery on real devices.
 
 **Release gate:** user can select a real file, play/pause/seek/skip offline, save a playlist, background the app, and resume without losing the queue.
 

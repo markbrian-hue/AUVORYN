@@ -1,0 +1,26 @@
+name: Flutter validation
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Bootstrap generated Android platform
+        run: flutter create --platforms=android .
+      - name: Remove generated Flutter starter test
+        run: |
+          if grep -q 'MyApp' test/widget_test.dart 2>/dev/null; then rm test/widget_test.dart; fi
+      - name: Resolve packages
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Unit and widget tests
+        run: flutter test
