@@ -80,8 +80,8 @@ class _AtmosphereSheet extends ConsumerWidget {
           ),
           const SizedBox(height: 13),
           const Text(
-            'Visual atmosphere only in this foundation build. '
-            'Ambient sound arrives with the audio system.',
+            'Weather animates inside your room when motion is enabled. '
+            'Ambient sound mixing is planned for Milestone 5.',
             style: TextStyle(color: AuvorynColors.mist, fontSize: 12),
           ),
         ],

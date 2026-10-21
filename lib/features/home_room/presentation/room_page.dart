@@ -19,6 +19,11 @@ class RoomPage extends ConsumerWidget {
     final currentTitle = ref.watch(musicProvider.select(
       (music) => music.currentSong?.title,
     ));
+    // Only playback transitions matter for the room. Progress ticks must not
+    // rebuild its expensive decorative painter.
+    final isPlaying = ref.watch(musicProvider.select(
+      (music) => music.playing,
+    ));
     final titleStyle = AppTheme.editorial(size: 40);
     return SafeArea(
       child: CustomScrollView(
@@ -66,7 +71,17 @@ class RoomPage extends ConsumerWidget {
                   const SizedBox(height: 23),
                   RoomScene(
                     settings: settings,
-                    onRecordTap: () => context.go('/library'),
+                    hasTrack: currentTitle != null,
+                    isPlaying: isPlaying,
+                    onRecordTap: () => currentTitle == null
+                        ? context.go('/library') : context.push('/now-playing'),
+                    onSpeakerTap: () {
+                      if (currentTitle == null) {
+                        context.go('/library');
+                      } else {
+                        ref.read(musicProvider.notifier).togglePlay();
+                      }
+                    },
                     onWindowTap: () => showAtmosphereSheet(context),
                     onLampTap: () async {
                       final saved = await ref
@@ -81,6 +96,19 @@ class RoomPage extends ConsumerWidget {
                       }
                     },
                     onShelfTap: () => context.go('/library'),
+                  ),
+                  const SizedBox(height: 11),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 2),
+                    child: Row(children: [
+                      Icon(Icons.touch_app_outlined,
+                        size: 15, color: AuvorynColors.champagne),
+                      SizedBox(width: 8),
+                      Expanded(child: Text(
+                        'Explore: record · speakers · lamp · window · shelf',
+                        style: TextStyle(color: AuvorynColors.mist, fontSize: 11),
+                      )),
+                    ]),
                   ),
                   if (currentTitle != null) ...[
                     const SizedBox(height: 17),
@@ -111,6 +139,9 @@ class RoomPage extends ConsumerWidget {
                                     fontWeight: FontWeight.w600)),
                               ],
                             )),
+                            Icon(isPlaying ? Icons.equalizer_rounded : Icons.pause_circle_outline,
+                              color: AuvorynColors.champagne, size: 19),
+                            const SizedBox(width: 10),
                             const Icon(Icons.arrow_outward_rounded,
                               color: AuvorynColors.mist, size: 19),
                           ]),
