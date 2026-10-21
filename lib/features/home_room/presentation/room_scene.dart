@@ -3,6 +3,7 @@ import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/features/home_room/domain/room_camera.dart';
 import 'package:auvoryn/features/home_room/presentation/room_diorama.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// An offline perspective-projected apartment with an intentionally bounded
 /// camera. Horizontal gestures orbit; vertical gestures stay with page scrolling.
@@ -393,12 +394,8 @@ class _RoomSceneState extends State<RoomScene>
       ),
       (
         RoomCamera.speaker,
-        widget.hasTrack
-            ? (widget.isPlaying
-                  ? 'Pause music at speakers'
-                  : 'Play music at speakers')
-            : 'Choose music at speakers',
-        widget.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+        'Open music and ambience mixer',
+        Icons.tune_rounded,
         widget.onSpeakerTap,
         'speaker',
       ),
@@ -473,7 +470,10 @@ class _RoomSceneState extends State<RoomScene>
               color: Colors.transparent,
               child: InkResponse(
                 key: Key('room_target_$id'),
-                onTap: action,
+                onTap: () {
+                    HapticFeedback.selectionClick();
+                    action();
+                  },
                 radius: 25,
                 customBorder: const CircleBorder(),
                 child: SizedBox(
