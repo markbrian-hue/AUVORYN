@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 enum LibrarySection { songs, favorites, playlists }
+enum LibrarySort { recentImport, title, artist, album }
 
 class LibraryPage extends ConsumerStatefulWidget {
   const LibraryPage({super.key});
@@ -19,6 +20,7 @@ class LibraryPage extends ConsumerStatefulWidget {
 class _LibraryPageState extends ConsumerState<LibraryPage> {
   LibrarySection _section = LibrarySection.songs;
   String _query = '';
+  LibrarySort _sort = LibrarySort.recentImport;
 
   @override
   Widget build(BuildContext context) {
@@ -37,8 +39,18 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       }
       return s.title.toLowerCase().contains(query) ||
           s.artist.toLowerCase().contains(query) ||
+          s.album.toLowerCase().contains(query) ||
           s.fileName.toLowerCase().contains(query);
     }).toList();
+    displayed.sort((a, b) => switch (_sort) {
+      LibrarySort.recentImport => b.importedAt.compareTo(a.importedAt),
+      LibrarySort.title => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+      LibrarySort.artist => a.artist.toLowerCase().compareTo(b.artist.toLowerCase()),
+      LibrarySort.album => a.album.toLowerCase().compareTo(b.album.toLowerCase()),
+    });
+    final displayedPlaylists = music.playlists.where(
+      (p) => p.name.toLowerCase().contains(query),
+    ).toList();
 
     return SafeArea(
       child: ListView(
@@ -172,25 +184,44 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
             ),
           ),
           const SizedBox(height: 21),
-          if (_section != LibrarySection.playlists) ...[
-            TextField(
-              key: const Key('search_music'),
-              onChanged: (value) => setState(() => _query = value),
-              decoration: InputDecoration(
-                hintText: 'Search your music',
-                prefixIcon: const Icon(Icons.search_rounded),
-                filled: true,
-                fillColor: AuvorynColors.slate,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(17),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
-                ),
+          TextField(
+            key: const Key('search_music'),
+            onChanged: (value) => setState(() => _query = value),
+            decoration: InputDecoration(
+              hintText: _section == LibrarySection.playlists
+                  ? 'Search playlists' : 'Search songs, artists and albums',
+              prefixIcon: const Icon(Icons.search_rounded),
+              filled: true,
+              fillColor: AuvorynColors.slate,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(17),
+                borderSide: BorderSide.none,
               ),
             ),
+          ),
+          if (_section != LibrarySection.playlists)
+            Align(
+              alignment: Alignment.centerRight,
+              child: DropdownButton<LibrarySort>(
+                key: const Key('library_sort'),
+                value: _sort,
+                underline: const SizedBox.shrink(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _sort = value);
+                },
+                items: const [
+                  DropdownMenuItem(value: LibrarySort.recentImport,
+                      child: Text('Recently imported')),
+                  DropdownMenuItem(value: LibrarySort.title,
+                      child: Text('Title A–Z')),
+                  DropdownMenuItem(value: LibrarySort.artist,
+                      child: Text('Artist A–Z')),
+                  DropdownMenuItem(value: LibrarySort.album,
+                      child: Text('Album A–Z')),
+                ],
+              ),
+            ),
+          if (_section != LibrarySection.playlists) ...[
             const SizedBox(height: 19),
             if (displayed.isNotEmpty)
               Row(
@@ -265,14 +296,14 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
               ],
             ),
             const SizedBox(height: 12),
-            if (music.playlists.isEmpty)
+            if (displayedPlaylists.isEmpty)
               const _EmptyCollection(
                 icon: Icons.queue_music_rounded,
                 title: 'Make it yours',
                 detail: 'Create a playlist and add your favorite local songs.',
               )
             else
-              for (final playlist in music.playlists)
+              for (final playlist in displayedPlaylists)
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 5,
@@ -461,6 +492,8 @@ class SongRow extends ConsumerWidget {
                     ref.read(musicProvider.notifier).toggleFavorite(song);
                   } else if (action == 'playlist') {
                     showAddToPlaylistSheet(context, song);
+                  } else if (action == 'next') {
+                    ref.read(musicProvider.notifier).playNextInQueue(song);
                   }
                 },
                 itemBuilder: (_) => [
@@ -473,6 +506,9 @@ class SongRow extends ConsumerWidget {
                   const PopupMenuItem(
                     value: 'playlist',
                     child: Text('Add to playlist…'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'next', child: Text('Play next'),
                   ),
                 ],
               ),
