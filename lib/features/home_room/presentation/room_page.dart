@@ -3,6 +3,8 @@ import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/core/widgets/auvoryn_logo.dart';
 import 'package:auvoryn/features/atmosphere/presentation/atmosphere_sheet.dart';
+import 'package:auvoryn/features/atmosphere/presentation/room_mixer_sheet.dart';
+import 'package:auvoryn/features/scenes/presentation/listening_scenes_sheet.dart';
 import 'package:auvoryn/features/customization/presentation/window_view_sheet.dart';
 import 'package:auvoryn/features/home_room/presentation/room_scene.dart';
 import 'package:auvoryn/features/music/application/music_controller.dart';
@@ -110,13 +112,7 @@ class RoomPage extends ConsumerWidget {
                     hasTrack: song != null,
                     isPlaying: playing,
                     onRecordTap: openRecord,
-                    onSpeakerTap: () {
-                      if (song == null) {
-                        context.go('/library');
-                      } else {
-                        ref.read(musicProvider.notifier).togglePlay();
-                      }
-                    },
+                    onSpeakerTap: () => showRoomMixerSheet(context),
                     onWindowTap: () => showAtmosphereSheet(context),
                     onLampTap: () => save(
                       controller.setLamp(
@@ -146,6 +142,24 @@ class RoomPage extends ConsumerWidget {
                             !ref.read(roomSettingsProvider).lampOn,
                           ),
                         ),
+                      ),
+                      _RoomAction(
+                        key: const Key('open_listening_scenes'),
+                        label: 'Scenes',
+                        icon: Icons.bookmark_border_rounded,
+                        onTap: () => showListeningScenesSheet(context),
+                      ),
+                      _RoomAction(
+                        key: const Key('open_immersive_room'),
+                        label: 'Immerse',
+                        icon: Icons.fullscreen_rounded,
+                        onTap: () => context.push('/immersive'),
+                      ),
+                      _RoomAction(
+                        key: const Key('open_room_mixer'),
+                        label: 'Mixer',
+                        icon: Icons.tune_rounded,
+                        onTap: () => showRoomMixerSheet(context),
                       ),
                       _RoomAction(
                         key: const Key('customize_window'),
