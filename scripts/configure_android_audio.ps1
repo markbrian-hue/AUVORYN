@@ -1,6 +1,18 @@
 # Applies audio_service native Android declarations to Flutter-generated files.
 # Idempotent: safe to rerun after regenerating android/ or upgrading Flutter.
 $ErrorActionPreference = 'Stop'
+# Preserve the Flutter-generated test that refers to missing MyApp.
+$sampleTest = 'test/widget_test.dart'
+if ((Test-Path $sampleTest) -and
+    (Select-String -Path $sampleTest -Pattern 'pumpWidget\(const MyApp\(\)\)' -Quiet)) {
+  $backup = 'test/widget_test.generated-backup'
+  if (-not (Test-Path $backup)) {
+    Move-Item $sampleTest $backup
+    Write-Host "Preserved Flutter-generated starter test as $backup"
+  } else {
+    Write-Warning 'Obsolete test/widget_test.dart found; inspect and remove it manually.'
+  }
+}
 $path = 'android/app/src/main/AndroidManifest.xml'
 if (-not (Test-Path $path)) {
   throw 'AndroidManifest.xml missing. Run flutter create --platforms=android . first.'
