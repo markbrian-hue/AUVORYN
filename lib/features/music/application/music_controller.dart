@@ -283,7 +283,7 @@ class MusicController extends Notifier<MusicState> {
     });
     _libraryWrites = next.then<void>(
       (_) {},
-      onError: (Object _, StackTrace __) {},
+      onError: (Object _, StackTrace _) {},
     );
     return next;
   }

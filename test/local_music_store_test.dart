@@ -6,6 +6,16 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+class SelectedAudio implements PlatformFile {
+  SelectedAudio(this.path, this.name);
+  @override
+  final String path;
+  @override
+  final String name;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   late Directory directory;
   setUpAll(() {
@@ -140,11 +150,7 @@ void main() {
         0,
       ];
       await source.writeAsBytes(bytes);
-      final file = PlatformFile(
-        name: 'Rain.wav',
-        size: bytes.length,
-        path: source.path,
-      );
+      final file = SelectedAudio(source.path, 'Rain.wav');
       final imported = await store.importFile(file);
       expect(imported, isNotNull);
       expect(await store.importFile(file), isNull);
