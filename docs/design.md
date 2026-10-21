@@ -24,7 +24,7 @@ Spacing scale: 4/8/12/16/24/32/48 logical pixels. Page gutters 24. Panels round 
 
 ## Screens in Milestone 1
 
-- Room: top wordmark, settings, small 'YOUR SPACE' eyebrow, editorial Midnight Apartment title, 2.5D window/city/stereo/vinyl room, functional hotspots and mood surface.
+- Room: editorial heading, perspective-projected 3D apartment with bounded drag-to-orbit camera, accessible object controls, tactile atmosphere presets and a collection card. Manrope UI and Instrument Serif headings remain bundled offline. See `docs/spatial_home.md`.
 - Library: editorial collection identity and a truthful empty state. No imported songs yet.
 - Memories: future listening journal with truthful empty state; no fictitious metrics.
 - Settings: lamp preference, motion preference, and atmosphere selection.
