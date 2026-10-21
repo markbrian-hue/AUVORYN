@@ -346,7 +346,7 @@ class _Apartment {
     if (light > 0) {
       for (var i = 5; i >= 0; i--) {
         disc(
-          const RoomPoint(2.3, .034 + (5 - i) * .001, .25),
+          RoomPoint(2.3, .034 + (5 - i) * .001, .25),
           .35 + i * .18,
           glow.withValues(alpha: light * .035),
         );

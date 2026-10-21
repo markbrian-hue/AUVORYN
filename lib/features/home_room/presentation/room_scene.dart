@@ -224,6 +224,7 @@ class _RoomSceneState extends State<RoomScene>
                   Positioned(
                     top: 14,
                     left: 16,
+                    right: 60,
                     child: IgnorePointer(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -243,14 +244,18 @@ class _RoomSceneState extends State<RoomScene>
                               color: AuvorynColors.champagne,
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              widget.isPlaying
-                                  ? 'YOUR ROOM · PLAYING'
-                                  : 'YOUR ROOM · AT REST',
-                              style: const TextStyle(
-                                fontSize: 9,
-                                letterSpacing: 1.1,
-                                color: AuvorynColors.ivory,
+                            Flexible(
+                              child: Text(
+                                widget.isPlaying
+                                    ? 'YOUR ROOM · PLAYING'
+                                    : 'YOUR ROOM · AT REST',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  letterSpacing: 1.1,
+                                  color: AuvorynColors.ivory,
+                                ),
                               ),
                             ),
                           ],
