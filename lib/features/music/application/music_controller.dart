@@ -124,7 +124,13 @@ class MusicController extends Notifier<MusicState> {
   Future<void> _listeningWrites = Future<void>.value();
 
   LocalMusicStore? _cachedStore;
-  LocalMusicStore get _store => _cachedStore ??= ref.read(musicStoreProvider);
+  LocalMusicStore get _store {
+    final cached = _cachedStore;
+    if (cached != null) return cached;
+    final store = ref.read(musicStoreProvider);
+    _cachedStore = store;
+    return store;
+  }
 
   @override
   MusicState build() {
@@ -477,8 +483,17 @@ class MusicController extends Notifier<MusicState> {
       if (_disposed) {
         return count;
       }
+      final existingById = {for (final song in state.songs) song.id: song};
+      final importedIds = imported.map((song) => song.id).toSet();
       state = state.copyWith(
-        songs: [...imported, ...state.songs],
+        songs: [
+          for (final song in imported)
+            song.copyWith(
+              isFavorite: existingById[song.id]?.isFavorite ?? song.isFavorite,
+            ),
+          for (final song in state.songs)
+            if (!importedIds.contains(song.id)) song,
+        ],
         error: failures.isEmpty
             ? null
             : 'Some files could not be imported: ${failures.take(2).join('; ')}',

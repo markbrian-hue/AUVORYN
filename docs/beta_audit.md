@@ -34,6 +34,7 @@ tracked. No user data, app identifier, release key, or schema version was change
 | P1 | App Reduce motion setting changes the room but not player or route animations. | `app.dart`, `vinyl_artwork.dart` | Combine app and OS reduced motion in the root MediaQuery. Stop vinyl animation on background lifecycle and disabled tickers. Widget tests exercise propagation and frame scheduling. |
 | P1 | Many playlists overflow the Add to playlist sheet; the window sheet can overflow in landscape; 320px player controls exceed available width. | library, window sheet, player | Scrollable bounded playlist sheet, scrollable window sheet, 64px primary play target and 48px secondary targets. Compact/large-text tests added. |
 | P2 | Library filtering and eager row construction repeat on every playback position update. | `library_page.dart`, `playlist_detail_page.dart` | Subscribe only to relevant library collections/status. This removes that position-driven work; full lazy list conversion remains recommended for very large collections. |
+| P1 | Reimporting identical audio cannot repair a missing private file because deduplication exits early. | `local_music_store.dart`, `music_controller.dart` | Restore the missing copy at a fresh managed path, update only the path column, preserve IDs/relationships and avoid duplicate UI entries. SQLite regression checks favorites, playlist and history preservation. |
 | P2 | Instrument Serif is referenced but missing; Manrope is neither bundled nor configured. | theme, pubspec, `assets/fonts` | Bundle unmodified official font files with OFL notices; apply Manrope to UI text and Instrument Serif to editorial headings. No network font dependency. |
 | P2 | Playlist rename/delete failures can escape UI callbacks. | `playlist_detail_page.dart` | Catch failure and keep a useful recovery message; do not navigate away on failed deletion. |
 
@@ -44,7 +45,7 @@ or exhaustive vulnerability database scan.
 
 ## Verification
 
-Local Dart formatting and `git diff --check` were executed. Local Flutter package
+Local Dart formatting and `git diff --check` were executed. A standalone Dart history smoke check passed (explicit seek, pause, track change and qualification; 12,000 ms credited). FontTools parsed both bundled fonts successfully. Calculated WCAG contrast for ivory/mist/champagne on the three solid surface tokens ranges from 6.55:1 to 16.98:1; this does not establish contrast over every scene or gradient. Local Flutter package
 setup was rejected by automatic approval review because it attempted to reach
 the cloud instance metadata service. That request was not retried. GitHub Actions
 is the independent validation path for analyzer, tests and Android compilation.
@@ -63,6 +64,8 @@ controlled native-boundary double, not real audio output.
 | --- | --- |
 | Offline Dart formatting of changed files | PASS (package-resolution warnings; not an analyzer result) |
 | `git diff --check` | PASS |
+| Standalone Dart listening-tracker regression | PASS |
+| Font parsing and solid-token contrast calculation | PASS — minimum 6.55:1 for tested pairs |
 | Local `flutter pub get`, analyzer, test, Android build | BLOCKED / NOT RUN after dependency setup rejection |
 | GitHub Actions analyzer, tests, debug APK | Pending final CI result |
 | Device audio, Bluetooth, calls, lock-screen, battery/FPS, screenshot review | NOT RUN — no device/emulator available |
@@ -79,9 +82,10 @@ checks scheduled animation callbacks, not device energy use.
   on devices; define whether ambience should pause with music before changing its
   independent playback semantics.
 - Queue shuffle/repeat modes are not restored. Queue reordering is absent.
-- Missing private media cannot currently be repaired by importing identical bytes:
-  SHA deduplication returns “already imported” even when the stored path is missing.
-  Design a path-safe repair that preserves IDs, playlists and history.
+- Missing media can now be repaired by selecting identical audio bytes again.
+  The private file is restored under a fresh generated path, retaining track identity,
+  playlists, favorites and history. Select the restored track to load its repaired path.
+  Export/restore and detection of corrupted-but-present private files remain open.
 - Large-library import hashing occurs in the UI isolate; measure impact, then
   consider moving hash/copy analysis and lazy library rows off hot UI paths.
 - Startup failure copy still contains developer-oriented remediation. Add a

@@ -161,13 +161,36 @@ class LocalMusicStore {
     final checksum = digest.toString();
     final existing = await _db.query(
       'tracks',
-      columns: ['id'],
       where: 'sha256 = ?',
       whereArgs: [checksum],
       limit: 1,
     );
     if (existing.isNotEmpty) {
-      return null;
+      final stored = Song.fromRow(existing.single);
+      if (await File(stored.path).exists()) {
+        return null;
+      }
+      // Repair only the missing private copy. Never replace a row (which could
+      // cascade-delete playlists/history) or write to a persisted arbitrary path.
+      final repair = File(p.join(_musicDirectory.path, '${_uuid.v4()}.$ext'));
+      try {
+        await source.copy(repair.path);
+        final changed = await _db.update(
+          'tracks',
+          {'path': repair.path},
+          where: 'id = ?',
+          whereArgs: [stored.id],
+        );
+        if (changed != 1) {
+          throw StateError('The original track no longer exists.');
+        }
+        return Song.fromRow({...existing.single, 'path': repair.path});
+      } catch (_) {
+        if (await repair.exists()) {
+          await repair.delete();
+        }
+        rethrow;
+      }
     }
 
     final id = _uuid.v4();

@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-class SelectedAudio implements PlatformFile {
+final class SelectedAudio extends PlatformFile {
   SelectedAudio(this.path, this.name);
   @override
   final String path;
@@ -154,8 +154,19 @@ void main() {
       final imported = await store.importFile(file);
       expect(imported, isNotNull);
       expect(await store.importFile(file), isNull);
+      await store.setFavorite(imported!.id, true);
+      final playlist = await store.createPlaylist('Keep this');
+      await store.updatePlaylistTracks(playlist.id, [imported.id]);
+      await store.recordListening(imported.id, 10000, qualifiedPlay: true);
+      await File(imported.path).delete(); // Simulate a missing private copy.
+      final repaired = await store.importFile(file);
+      expect(repaired!.id, imported.id);
+      expect(repaired.isFavorite, true);
+      expect((await store.load()).songs.length, 1);
+      expect((await store.load()).playlists.single.songIds, [imported.id]);
+      expect((await store.loadListeningSnapshot()).totalPlays, 1);
       await source.delete();
-      expect(await File(imported!.path).readAsBytes(), bytes);
+      expect(await File(repaired.path).readAsBytes(), bytes);
       await store.saveQueue(
         SavedQueue(songIds: [imported.id], positionMs: 123),
       );
