@@ -91,8 +91,8 @@ The application/test source at `bfc1852d1584c374977883910ffa8a727da5c24e` passed
 [GitHub Actions run 39618693484](https://github.com/markbrian-hue/AUVORYN/actions/runs/39618693484):
 package resolution, analyzer, all 42 tests and Android debug APK compilation. The
 APK was checked for nonzero size and uploaded as `auvoryn-android-debug-qa`
-(five-day retention). The final commit after that run updates only this report;
-its independent rerun is linked from [PR #9](https://github.com/markbrian-hue/AUVORYN/pull/9).
+(five-day retention). Documentation-only commits after that run update this report and license whitespace;
+their independent reruns are linked from [PR #9](https://github.com/markbrian-hue/AUVORYN/pull/9).
 
 New tests cover controller races, completed-track restart, disposal, favorite
 preservation, playlist updates, failed-write recovery, old schema v1/v2 upgrades,
@@ -165,11 +165,11 @@ checks scheduled animation callbacks, not device energy use.
 - Implementation commits: `5153165` (audio/library reliability), `2d57d72`
   (UI/accessibility/fonts), `7f023b2` (completion/disposal), `c023012`
   (analyzer/test compatibility), `18d21a5` (missing-file repair), and
-  `bfc1852` (compact-player regression harness). This report is a final docs-only commit.
+  `bfc1852` (compact-player regression harness). The final commits contain only the report and normalized license whitespace.
 - Early CI runs exposed test API compatibility/lint problems and an offscreen
   test-finder mistake; those were fixed without removing the relevant assertions.
 - Application validation run `39618693484` passed all automated gates. The final
-  docs-only commit is also validated before the PR is marked ready. Device-dependent
+  documentation-only revision is also validated before the PR is marked ready. Device-dependent
   checks remain required even after automated CI succeeds.
 
 ## 9. Next development roadmap
