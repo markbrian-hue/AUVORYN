@@ -100,7 +100,16 @@ class PlaylistDetailPage extends ConsumerWidget {
       context: context, isScrollControlled: true, showDragHandle: true,
       builder: (context) => Consumer(builder: (context, modalRef, _) {
         final state = modalRef.watch(musicProvider);
-        final updated = state.playlists.where((p) => p.id == playlist.id).first;
+        // The playlist may disappear while this modal route is still mounted.
+        // Do not call .first on an empty collection during reverse transitions.
+        final matching = state.playlists.where((p) => p.id == playlist.id);
+        if (matching.isEmpty) {
+          return const SafeArea(child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('This playlist is no longer available.'),
+          ));
+        }
+        final updated = matching.first;
         return SafeArea(child: FractionallySizedBox(
           heightFactor: .70,
           child: Column(children: [
