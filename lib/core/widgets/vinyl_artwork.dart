@@ -24,11 +24,27 @@ class VinylArtwork extends StatefulWidget {
 }
 
 class _VinylArtworkState extends State<VinylArtwork>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  bool _foreground = true;
   late final AnimationController _rotation = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 12),
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _foreground =
+        WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    _syncAnimation();
+  }
 
   @override
   void didChangeDependencies() {
@@ -43,9 +59,13 @@ class _VinylArtworkState extends State<VinylArtwork>
   }
 
   void _syncAnimation() {
-    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (widget.playing && !reduceMotion) {
-      _rotation.repeat();
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (widget.playing &&
+        !reduceMotion &&
+        _foreground &&
+        TickerMode.valuesOf(context).enabled) {
+      if (!_rotation.isAnimating) _rotation.repeat();
     } else {
       _rotation.stop(canceled: false);
     }
@@ -53,6 +73,7 @@ class _VinylArtworkState extends State<VinylArtwork>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _rotation.dispose();
     super.dispose();
   }
@@ -115,13 +136,21 @@ class _RecordPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.shortestSide / 2;
     final disc = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawCircle(center, radius, Paint()
-      ..shader = const SweepGradient(
-        colors: [
-          Color(0xFF15171D), Color(0xFF30343B), Color(0xFF101116),
-          Color(0xFF23262B), Color(0xFF44434A), Color(0xFF15171D),
-        ],
-      ).createShader(disc));
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..shader = const SweepGradient(
+          colors: [
+            Color(0xFF15171D),
+            Color(0xFF30343B),
+            Color(0xFF101116),
+            Color(0xFF23262B),
+            Color(0xFF44434A),
+            Color(0xFF15171D),
+          ],
+        ).createShader(disc),
+    );
 
     final groovePaint = Paint()
       ..color = const Color(0x40B6B7C0)
@@ -131,14 +160,28 @@ class _RecordPainter extends CustomPainter {
       canvas.drawCircle(center, radius * (.39 + i * .031), groovePaint);
     }
 
-    canvas.drawCircle(center, radius * .35, Paint()
-      ..shader = const RadialGradient(colors: [
-        Color(0xFFE6CBA7), AuvorynColors.champagne, Color(0xFF8E6950),
-      ]).createShader(Rect.fromCircle(center: center, radius: radius * .36)));
-    canvas.drawCircle(center, radius * .29, Paint()
-      ..color = const Color(0xFF141820));
-    canvas.drawCircle(center, radius * .267, Paint()
-      ..color = const Color(0xFF24272F));
+    canvas.drawCircle(
+      center,
+      radius * .35,
+      Paint()
+        ..shader = const RadialGradient(
+          colors: [
+            Color(0xFFE6CBA7),
+            AuvorynColors.champagne,
+            Color(0xFF8E6950),
+          ],
+        ).createShader(Rect.fromCircle(center: center, radius: radius * .36)),
+    );
+    canvas.drawCircle(
+      center,
+      radius * .29,
+      Paint()..color = const Color(0xFF141820),
+    );
+    canvas.drawCircle(
+      center,
+      radius * .267,
+      Paint()..color = const Color(0xFF24272F),
+    );
 
     if (!compact) {
       final painter = TextPainter(
@@ -156,13 +199,21 @@ class _RecordPainter extends CustomPainter {
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: radius * .46);
-      painter.paint(canvas, Offset(center.dx - painter.width / 2,
-          center.dy - painter.height / 2));
+      painter.paint(
+        canvas,
+        Offset(center.dx - painter.width / 2, center.dy - painter.height / 2),
+      );
     }
-    canvas.drawCircle(center, radius * .027, Paint()
-      ..color = AuvorynColors.mist);
-    canvas.drawCircle(center, radius * .012, Paint()
-      ..color = AuvorynColors.ink);
+    canvas.drawCircle(
+      center,
+      radius * .027,
+      Paint()..color = AuvorynColors.mist,
+    );
+    canvas.drawCircle(
+      center,
+      radius * .012,
+      Paint()..color = AuvorynColors.ink,
+    );
   }
 
   @override

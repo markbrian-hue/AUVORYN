@@ -20,7 +20,7 @@ Spacing scale: 4/8/12/16/24/32/48 logical pixels. Page gutters 24. Panels round 
 
 ## Type treatment
 
-**Instrument Serif** for spacious editorial section headings; **Manrope** for navigation, player text and settings. Fonts aren't bundled yet: `assets/fonts/README.md` describes user installation from official sources. This keeps the source package font-free and avoids unlicensed redistribution.
+**Instrument Serif** for spacious editorial section headings; **Manrope** for navigation, player text and settings. Both families are now bundled for offline use, with their SIL Open Font License files in `assets/fonts/`. See `docs/beta_audit.md` for the current implementation and remaining design work.
 
 ## Screens in Milestone 1
 

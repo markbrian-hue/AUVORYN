@@ -53,7 +53,7 @@ Tap any song for the full player. Use its action menu to favorite it or add it t
 - Native: Android manifest configured by `scripts/configure_android_audio.ps1` for generated Android native projects; iOS background mode needs `UIBackgroundModes = audio` once building on macOS.
 - Testing: `flutter analyze`, `flutter test`, real-device QA per `docs/qa.md`.
 
-**Status:** Source changes have not been compiled or tested on a device in the AI execution environment. Follow validation instructions before declaring M2 done.
+**Validation:** Automated results are recorded per GitHub Actions run. Physical-device validation remains separate; see `docs/qa.md` and `docs/beta_audit.md`.
 
 See `docs/milestone_2.md`, `docs/architecture.md`, and `docs/roadmap.md` for implementation and acceptance requirements.
 
