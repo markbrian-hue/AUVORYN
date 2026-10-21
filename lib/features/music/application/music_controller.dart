@@ -46,6 +46,10 @@ class MusicState {
     this.duration = Duration.zero,
     this.playing = false,
     this.loading = false,
+    this.importTotal = 0,
+    this.importDone = 0,
+    this.importDuplicates = 0,
+    this.importLabel = '',
     this.restoring = false,
     this.shuffle = false,
     this.repeat = LoopMode.off,
@@ -60,6 +64,10 @@ class MusicState {
   final Duration duration;
   final bool playing;
   final bool loading;
+  final int importTotal;
+  final int importDone;
+  final int importDuplicates;
+  final String importLabel;
   final bool restoring;
   final bool shuffle;
   final LoopMode repeat;
@@ -88,6 +96,10 @@ class MusicState {
     Duration? duration,
     bool? playing,
     bool? loading,
+    int? importTotal,
+    int? importDone,
+    int? importDuplicates,
+    String? importLabel,
     bool? restoring,
     bool? shuffle,
     LoopMode? repeat,
@@ -102,6 +114,10 @@ class MusicState {
     duration: duration ?? this.duration,
     playing: playing ?? this.playing,
     loading: loading ?? this.loading,
+    importTotal: importTotal ?? this.importTotal,
+    importDone: importDone ?? this.importDone,
+    importDuplicates: importDuplicates ?? this.importDuplicates,
+    importLabel: importLabel ?? this.importLabel,
     restoring: restoring ?? this.restoring,
     shuffle: shuffle ?? this.shuffle,
     repeat: repeat ?? this.repeat,
@@ -458,7 +474,10 @@ class MusicController extends Notifier<MusicState> {
     if (_disposed || state.loading) {
       return 0;
     }
-    state = state.copyWith(loading: true, clearError: true);
+    state = state.copyWith(
+      loading: true, clearError: true,
+      importDone: 0, importTotal: 0, importDuplicates: 0, importLabel: '',
+    );
     var count = 0;
     try {
       final selectedFiles = await FilePicker.pickFiles(
@@ -470,16 +489,30 @@ class MusicController extends Notifier<MusicState> {
       }
       final failures = <String>[];
       final imported = <Song>[];
+      var duplicates = 0;
+      var processed = 0;
+      state = state.copyWith(importTotal: selectedFiles.length);
       for (final file in selectedFiles) {
+        if (!_disposed) {
+          state = state.copyWith(importLabel: file.name);
+        }
         try {
           final song = await _store.importFile(file);
           if (song == null) {
+            duplicates++;
             continue;
           }
           imported.insert(0, song);
           count++;
         } catch (error) {
           failures.add('${file.name}: $error');
+        } finally {
+          processed++;
+          if (!_disposed) {
+            state = state.copyWith(
+              importDone: processed, importDuplicates: duplicates,
+            );
+          }
         }
       }
       if (_disposed) {
@@ -509,7 +542,7 @@ class MusicController extends Notifier<MusicState> {
       }
     } finally {
       if (!_disposed) {
-        state = state.copyWith(loading: false);
+        state = state.copyWith(loading: false, importLabel: '');
       }
     }
     return count;
