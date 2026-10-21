@@ -166,7 +166,9 @@ class LocalMusicStore {
       whereArgs: [checksum],
       limit: 1,
     );
-    if (existing.isNotEmpty) return null;
+    if (existing.isNotEmpty) {
+      return null;
+    }
 
     final id = _uuid.v4();
     final destination = File(p.join(_musicDirectory.path, '$id.$ext'));
@@ -191,23 +193,30 @@ class LocalMusicStore {
       } catch (_) {
         if (artPath != null) {
           final art = File(artPath);
-          if (await art.exists()) await art.delete();
+          if (await art.exists()) {
+            await art.delete();
+          }
         }
         rethrow;
       }
       return song;
     } catch (_) {
-      if (await destination.exists()) await destination.delete();
+      if (await destination.exists()) {
+        await destination.delete();
+      }
       rethrow;
     }
   }
 
   Future<String?> _saveArtwork(String id, List<int>? bytes) async {
-    if (bytes == null || bytes.isEmpty || bytes.length > 8 * 1024 * 1024)
+    if (bytes == null || bytes.isEmpty || bytes.length > 8 * 1024 * 1024) {
       return null;
+    }
     final data = Uint8List.fromList(bytes);
     final extension = MusicTagReader.pictureExtension(data);
-    if (extension == null) return null;
+    if (extension == null) {
+      return null;
+    }
     final file = File(p.join(_artworkDirectory.path, '$id.$extension'));
     try {
       await file.writeAsBytes(data, flush: true);
@@ -267,7 +276,9 @@ class LocalMusicStore {
     int ms, {
     bool qualifiedPlay = false,
   }) async {
-    if (ms <= 0 && !qualifiedPlay) return;
+    if (ms <= 0 && !qualifiedPlay) {
+      return;
+    }
     await _db.transaction((txn) async {
       final rows = await txn.query(
         'listening_stats',

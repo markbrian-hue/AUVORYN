@@ -32,7 +32,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     final controller = ref.read(musicProvider.notifier);
     final query = _query.trim().toLowerCase();
     final displayed = music.songs.where((s) {
-      if (_section == LibrarySection.favorites && !s.isFavorite) return false;
+      if (_section == LibrarySection.favorites && !s.isFavorite) {
+        return false;
+      }
       return s.title.toLowerCase().contains(query) ||
           s.artist.toLowerCase().contains(query) ||
           s.fileName.toLowerCase().contains(query);
@@ -83,7 +85,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                   ? null
                   : () async {
                       final count = await controller.importMusic();
-                      if (!context.mounted) return;
+                      if (!context.mounted) {
+                        return;
+                      }
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -129,7 +133,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                     ? null
                     : () async {
                         final changed = await controller.refreshMetadata();
-                        if (!context.mounted) return;
+                        if (!context.mounted) {
+                          return;
+                        }
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -289,7 +295,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 
   Future<void> _createPlaylist(BuildContext context) async {
     final name = await playlistNameDialog(context, title: 'New playlist');
-    if (name == null || !context.mounted) return;
+    if (name == null || !context.mounted) {
+      return;
+    }
     try {
       await ref.read(musicProvider.notifier).createPlaylist(name);
     } catch (error) {
@@ -345,7 +353,9 @@ class _PlaylistNameDialogState extends State<_PlaylistNameDialog> {
 
   void _save() {
     final name = _input.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      return;
+    }
     FocusScope.of(context).unfocus();
     Navigator.of(context).pop(name);
   }

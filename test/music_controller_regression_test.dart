@@ -16,7 +16,9 @@ class MemoryStore implements LocalMusicStore {
   @override
   Future<void> setFavorite(String id, bool value) async {
     await Future<void>.delayed(Duration.zero);
-    if (failWrite) throw StateError('Disk full');
+    if (failWrite) {
+      throw StateError('Disk full');
+    }
     favorites.add(value);
   }
 
@@ -75,7 +77,9 @@ class FakeAudio implements AudioPlayer {
     ShuffleOrder? shuffleOrder,
   }) async {
     activeLoads++;
-    if (activeLoads > maximumLoads) maximumLoads = activeLoads;
+    if (activeLoads > maximumLoads) {
+      maximumLoads = activeLoads;
+    }
     await Future<void>.delayed(const Duration(milliseconds: 5));
     loads++;
     currentIndex = initialIndex ?? 0;

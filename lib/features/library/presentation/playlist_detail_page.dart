@@ -45,8 +45,9 @@ class PlaylistDetailPage extends ConsumerWidget {
                     title: 'Rename playlist',
                     initialName: playlist.name,
                   );
-                  if (name != null)
+                  if (name != null) {
                     await controller.renamePlaylist(playlist, name);
+                  }
                 } else {
                   final confirmed = await showDialog<bool>(
                     context: context,
@@ -69,11 +70,13 @@ class PlaylistDetailPage extends ConsumerWidget {
                   );
                   if (confirmed == true) {
                     await controller.deletePlaylist(playlist);
-                    if (context.mounted) context.pop();
+                    if (context.mounted) {
+                      context.pop();
+                    }
                   }
                 }
               } catch (error) {
-                if (context.mounted)
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
@@ -81,6 +84,7 @@ class PlaylistDetailPage extends ConsumerWidget {
                       ),
                     ),
                   );
+                }
               }
             },
           ),
@@ -103,7 +107,9 @@ class PlaylistDetailPage extends ConsumerWidget {
                   ? null
                   : () async {
                       await controller.playSongs(songs);
-                      if (context.mounted) context.push('/now-playing');
+                      if (context.mounted) {
+                        context.push('/now-playing');
+                      }
                     },
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('PLAY PLAYLIST'),
@@ -122,7 +128,9 @@ class PlaylistDetailPage extends ConsumerWidget {
                 song: songs[i],
                 onTap: () async {
                   await controller.playSongs(songs, startIndex: i);
-                  if (context.mounted) context.push('/now-playing');
+                  if (context.mounted) {
+                    context.push('/now-playing');
+                  }
                 },
               ),
             const SizedBox(height: 18),

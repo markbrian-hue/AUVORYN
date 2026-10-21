@@ -55,7 +55,9 @@ class _VinylArtworkState extends State<VinylArtwork>
   @override
   void didUpdateWidget(covariant VinylArtwork oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.playing != widget.playing) _syncAnimation();
+    if (oldWidget.playing != widget.playing) {
+      _syncAnimation();
+    }
   }
 
   void _syncAnimation() {
@@ -65,7 +67,9 @@ class _VinylArtworkState extends State<VinylArtwork>
         !reduceMotion &&
         _foreground &&
         TickerMode.valuesOf(context).enabled) {
-      if (!_rotation.isAnimating) _rotation.repeat();
+      if (!_rotation.isAnimating) {
+        _rotation.repeat();
+      }
     } else {
       _rotation.stop(canceled: false);
     }

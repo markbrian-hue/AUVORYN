@@ -37,7 +37,9 @@ class ListeningTracker {
     final oldPosition = _position, oldTime = _at;
     _position = positionMs;
     _at = nowMs;
-    if (oldPosition == null || oldTime == null) return;
+    if (oldPosition == null || oldTime == null) {
+      return;
+    }
     final delta = positionMs - oldPosition, elapsed = nowMs - oldTime;
     if (delta < -250) {
       flush();
@@ -45,7 +47,9 @@ class ListeningTracker {
       _qualified = false;
       return;
     }
-    if (delta <= 0 || elapsed <= 0 || delta > elapsed + 1200) return;
+    if (delta <= 0 || elapsed <= 0 || delta > elapsed + 1200) {
+      return;
+    }
     final credited = delta.clamp(0, elapsed + 200).toInt();
     _session += credited;
     _pending += credited;
@@ -53,7 +57,9 @@ class ListeningTracker {
       _qualified = true;
       _pendingQualified = true;
     }
-    if (_pending >= 5000 || _pendingQualified) flush();
+    if (_pending >= 5000 || _pendingQualified) {
+      flush();
+    }
   }
 
   void flush() {

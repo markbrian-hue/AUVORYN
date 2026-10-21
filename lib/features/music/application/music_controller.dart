@@ -72,7 +72,9 @@ class MusicState {
       return null;
     }
     for (final s in songs) {
-      if (s.id == queueIds[currentIndex]) return s;
+      if (s.id == queueIds[currentIndex]) {
+        return s;
+      }
     }
     return null;
   }
@@ -121,7 +123,8 @@ class MusicController extends Notifier<MusicState> {
   late final ListeningTracker _listening = ListeningTracker(_recordListening);
   Future<void> _listeningWrites = Future<void>.value();
 
-  LocalMusicStore get _store => ref.read(musicStoreProvider);
+  LocalMusicStore? _cachedStore;
+  LocalMusicStore get _store => _cachedStore ??= ref.read(musicStoreProvider);
 
   @override
   MusicState build() {
@@ -131,8 +134,9 @@ class MusicController extends Notifier<MusicState> {
       if (previous?.musicVolume != next.musicVolume && _player != null) {
         unawaited(
           _player!.setVolume(next.musicVolume).catchError((Object error) {
-            if (!_disposed)
+            if (!_disposed) {
               state = state.copyWith(error: 'Unable to change volume: $error');
+            }
           }),
         );
       }
@@ -144,7 +148,9 @@ class MusicController extends Notifier<MusicState> {
       for (final subscription in _subscriptions) {
         unawaited(subscription.cancel());
       }
-      if (_player != null) unawaited(_player!.dispose());
+      if (_player != null) {
+        unawaited(_player!.dispose());
+      }
     });
     // Defer restoration until after build returns a fully initialized state.
     _restoration = Future<void>.microtask(() => _restore(initial.queue));
@@ -162,13 +168,19 @@ class MusicController extends Notifier<MusicState> {
     try {
       final player = await ref.read(musicAudioFactoryProvider)();
       created = player;
-      if (_disposed) throw StateError('Music controller is closed.');
+      if (_disposed) {
+        throw StateError('Music controller is closed.');
+      }
       await player.setVolume(ref.read(roomSettingsProvider).musicVolume);
-      if (_disposed) throw StateError('Music controller is closed.');
+      if (_disposed) {
+        throw StateError('Music controller is closed.');
+      }
       _player = player;
       _subscriptions.add(
         player.positionStream.listen((position) {
-          if (_disposed || _changingQueue) return;
+          if (_disposed || _changingQueue) {
+            return;
+          }
           _sampleListening(player, position);
           state = state.copyWith(position: position);
           if (state.queueIds.isNotEmpty &&
@@ -180,19 +192,34 @@ class MusicController extends Notifier<MusicState> {
       );
       _subscriptions.add(
         player.durationStream.listen((duration) {
-          if (!_disposed && !_changingQueue)
+          if (!_disposed && !_changingQueue) {
             state = state.copyWith(duration: duration ?? Duration.zero);
+          }
         }),
       );
       _subscriptions.add(
         player.playerStateStream.listen((event) {
-          if (_disposed || _changingQueue) return;
+          if (_disposed || _changingQueue) {
+            return;
+          }
           _sampleListening(player, player.position);
           state = state.copyWith(
             playing:
                 event.playing &&
                 event.processingState != ProcessingState.completed,
           );
+          if (event.playing &&
+              event.processingState == ProcessingState.completed) {
+            // Also update the native media session after its completion event.
+            unawaited(
+              _transport(() async {
+                if (player.playing &&
+                    player.processingState == ProcessingState.completed) {
+                  await player.pause();
+                }
+              }),
+            );
+          }
         }),
       );
       _subscriptions.add(
@@ -200,8 +227,9 @@ class MusicController extends Notifier<MusicState> {
           if (_disposed ||
               _changingQueue ||
               index == null ||
-              index >= state.queueIds.length)
+              index >= state.queueIds.length) {
             return;
+          }
           state = state.copyWith(
             currentIndex: index,
             position: player.position,
@@ -211,15 +239,18 @@ class MusicController extends Notifier<MusicState> {
       );
       _subscriptions.add(
         player.errorStream.listen((error) {
-          if (!_disposed)
+          if (!_disposed) {
             state = state.copyWith(error: 'Playback error: ${error.message}');
+          }
         }),
       );
       return player;
     } catch (_) {
       _audioInitialization = null;
       _player = null;
-      if (created != null) await created.dispose();
+      if (created != null) {
+        await created.dispose();
+      }
       rethrow;
     }
   }
@@ -230,11 +261,14 @@ class MusicController extends Notifier<MusicState> {
     final next = _transportWrites
         .then((_) async {
           await _restoration;
-          if (!_disposed) await action();
+          if (!_disposed) {
+            await action();
+          }
         })
         .catchError((Object error) {
-          if (!_disposed)
+          if (!_disposed) {
             state = state.copyWith(error: 'Playback failed: $error');
+          }
         });
     _transportWrites = next;
     return next;
@@ -242,7 +276,9 @@ class MusicController extends Notifier<MusicState> {
 
   Future<T> _libraryEdit<T>(Future<T> Function() action) {
     final next = _libraryWrites.then((_) {
-      if (_disposed) throw StateError('Music controller is closed.');
+      if (_disposed) {
+        throw StateError('Music controller is closed.');
+      }
       return action();
     });
     _libraryWrites = next.then<void>(
@@ -254,10 +290,11 @@ class MusicController extends Notifier<MusicState> {
 
   Future<void> _safeLibraryEdit(Future<void> Function() action) =>
       _libraryEdit(action).catchError((Object error) {
-        if (!_disposed)
+        if (!_disposed) {
           state = state.copyWith(
             error: 'Unable to save library change: $error',
           );
+        }
       });
 
   void _sampleListening(AudioPlayer player, Duration position) {
@@ -289,11 +326,14 @@ class MusicController extends Notifier<MusicState> {
     unawaited(
       _listeningWrites
           .then((_) {
-            if (!_disposed) ref.invalidate(listeningSnapshotProvider);
+            if (!_disposed) {
+              ref.invalidate(listeningSnapshotProvider);
+            }
           })
           .catchError((Object error) {
-            if (!_disposed)
+            if (!_disposed) {
               state = state.copyWith(error: 'History save failed: $error');
+            }
           }),
     );
   }
@@ -307,25 +347,35 @@ class MusicController extends Notifier<MusicState> {
         .then((_) => store.clearListeningHistory());
     _listeningWrites = clearing;
     await clearing;
-    if (!_disposed) ref.invalidate(listeningSnapshotProvider);
+    if (!_disposed) {
+      ref.invalidate(listeningSnapshotProvider);
+    }
   }
 
   Future<void> _restore(SavedQueue saved) async {
-    if (saved.songIds.isEmpty || _disposed) return;
+    if (saved.songIds.isEmpty || _disposed) {
+      return;
+    }
     try {
       final indexed = {for (final song in state.songs) song.id: song};
       final valid = <Song>[];
       for (final id in saved.songIds) {
         final song = indexed[id];
-        if (song != null && await File(song.path).exists()) valid.add(song);
+        if (song != null && await File(song.path).exists()) {
+          valid.add(song);
+        }
       }
-      if (_disposed || valid.isEmpty) return;
+      if (_disposed || valid.isEmpty) {
+        return;
+      }
       final selectedId = saved.index >= 0 && saved.index < saved.songIds.length
           ? saved.songIds[saved.index]
           : null;
       final index = valid.indexWhere((s) => s.id == selectedId);
       final player = await _audio();
-      if (_disposed) return;
+      if (_disposed) {
+        return;
+      }
       state = state.copyWith(
         queueIds: valid.map((s) => s.id).toList(),
         currentIndex: index < 0 ? 0 : index,
@@ -341,10 +391,11 @@ class MusicController extends Notifier<MusicState> {
         ),
       );
     } catch (error) {
-      if (!_disposed)
+      if (!_disposed) {
         state = state.copyWith(
           error: 'Unable to restore previous queue: $error',
         );
+      }
     } finally {
       _changingQueue = false;
       if (!_disposed) {
@@ -373,7 +424,9 @@ class MusicController extends Notifier<MusicState> {
   ];
 
   void _persistQueue() {
-    if (_disposed) return;
+    if (_disposed) {
+      return;
+    }
     final snapshot = SavedQueue(
       songIds: List.of(state.queueIds),
       index: state.currentIndex,
@@ -384,16 +437,19 @@ class MusicController extends Notifier<MusicState> {
         .catchError((Object _) {})
         .then((_) => store.saveQueue(snapshot))
         .catchError((Object error) {
-          if (!_disposed)
+          if (!_disposed) {
             state = state.copyWith(
               error: 'Unable to save playback queue: $error',
             );
+          }
         });
   }
 
   Future<int> importMusic() async {
     await _restoration;
-    if (_disposed || state.loading) return 0;
+    if (_disposed || state.loading) {
+      return 0;
+    }
     state = state.copyWith(loading: true, clearError: true);
     var count = 0;
     try {
@@ -401,20 +457,26 @@ class MusicController extends Notifier<MusicState> {
         type: FileType.custom,
         allowedExtensions: LocalMusicStore.supportedExtensions.toList(),
       );
-      if (selectedFiles.isEmpty) return 0;
+      if (selectedFiles.isEmpty) {
+        return 0;
+      }
       final failures = <String>[];
       final imported = <Song>[];
       for (final file in selectedFiles) {
         try {
           final song = await _store.importFile(file);
-          if (song == null) continue;
+          if (song == null) {
+            continue;
+          }
           imported.insert(0, song);
           count++;
         } catch (error) {
           failures.add('${file.name}: $error');
         }
       }
-      if (_disposed) return count;
+      if (_disposed) {
+        return count;
+      }
       state = state.copyWith(
         songs: [...imported, ...state.songs],
         error: failures.isEmpty
@@ -423,12 +485,15 @@ class MusicController extends Notifier<MusicState> {
         clearError: failures.isEmpty,
       );
     } catch (error) {
-      if (!_disposed)
+      if (!_disposed) {
         state = state.copyWith(
           error: 'Unable to open the music picker: $error',
         );
+      }
     } finally {
-      if (!_disposed) state = state.copyWith(loading: false);
+      if (!_disposed) {
+        state = state.copyWith(loading: false);
+      }
     }
     return count;
   }
@@ -436,12 +501,16 @@ class MusicController extends Notifier<MusicState> {
   /// Refresh tags on demand without blocking startup or audio playback.
   Future<int> refreshMetadata() async {
     await _restoration;
-    if (_disposed || state.loading || state.songs.isEmpty) return 0;
+    if (_disposed || state.loading || state.songs.isEmpty) {
+      return 0;
+    }
     state = state.copyWith(loading: true, clearError: true);
     try {
       final beforeById = {for (final song in state.songs) song.id: song};
       final updated = await _store.refreshMetadata(state.songs);
-      if (_disposed) return 0;
+      if (_disposed) {
+        return 0;
+      }
       final changed = updated.where((song) {
         final before = beforeById[song.id]!;
         return song.title != before.title ||
@@ -459,22 +528,31 @@ class MusicController extends Notifier<MusicState> {
       );
       return changed;
     } catch (error) {
-      if (!_disposed)
+      if (!_disposed) {
         state = state.copyWith(error: 'Metadata refresh failed: $error');
+      }
       return 0;
     } finally {
-      if (!_disposed) state = state.copyWith(loading: false);
+      if (!_disposed) {
+        state = state.copyWith(loading: false);
+      }
     }
   }
 
   Future<void> playSongs(List<Song> selected, {int startIndex = 0}) =>
       _transport(() async {
-        if (selected.isEmpty) return;
+        if (selected.isEmpty) {
+          return;
+        }
         final songs = <Song>[];
         for (final song in selected) {
-          if (await File(song.path).exists()) songs.add(song);
+          if (await File(song.path).exists()) {
+            songs.add(song);
+          }
         }
-        if (_disposed) return;
+        if (_disposed) {
+          return;
+        }
         if (songs.isEmpty) {
           state = state.copyWith(
             error: 'These music files are missing. Try importing them again.',
@@ -487,7 +565,9 @@ class MusicController extends Notifier<MusicState> {
         final index = songs.indexWhere((s) => s.id == initialId);
         final current = index < 0 ? 0 : index;
         final player = await _audio();
-        if (_disposed) return;
+        if (_disposed) {
+          return;
+        }
         await player.pause();
         _listening.flush();
         _listening.reset();
@@ -502,7 +582,9 @@ class MusicController extends Notifier<MusicState> {
         _persistQueue();
         try {
           await player.setAudioSources(_sources(songs), initialIndex: current);
-          if (_disposed) return;
+          if (_disposed) {
+            return;
+          }
           _changingQueue = false;
           state = state.copyWith(
             position: player.position,
@@ -512,23 +594,27 @@ class MusicController extends Notifier<MusicState> {
           // Do not await play(): its Future completes when playback ends.
           unawaited(
             player.play().catchError((Object error) {
-              if (!_disposed)
+              if (!_disposed) {
                 state = state.copyWith(error: 'Unable to play: $error');
+              }
             }),
           );
         } catch (error) {
-          if (!_disposed)
+          if (!_disposed) {
             state = state.copyWith(
               error: 'Unable to load audio: $error',
               playing: false,
             );
+          }
         } finally {
           _changingQueue = false;
         }
       });
 
   Future<void> togglePlay() => _transport(() async {
-    if (state.queueIds.isEmpty) return;
+    if (state.queueIds.isEmpty) {
+      return;
+    }
     try {
       final player = await _audio();
       if (player.playing &&
@@ -541,20 +627,27 @@ class MusicController extends Notifier<MusicState> {
         }
         unawaited(
           player.play().catchError((Object error) {
-            if (!_disposed)
+            if (!_disposed) {
               state = state.copyWith(error: 'Unable to play: $error');
+            }
           }),
         );
       }
     } catch (error) {
-      if (!_disposed) state = state.copyWith(error: 'Playback failed: $error');
+      if (!_disposed) {
+        state = state.copyWith(error: 'Playback failed: $error');
+      }
     }
   });
 
   Future<void> next() => _transport(() async {
     final player = _player;
-    if (player == null) return;
-    if (player.hasNext) await player.seekToNext();
+    if (player == null) {
+      return;
+    }
+    if (player.hasNext) {
+      await player.seekToNext();
+    }
     if (!_disposed) {
       state = state.copyWith(
         position: player.position,
@@ -566,7 +659,9 @@ class MusicController extends Notifier<MusicState> {
 
   Future<void> previous() => _transport(() async {
     final player = _player;
-    if (player == null) return;
+    if (player == null) {
+      return;
+    }
     if (state.position.inSeconds > 3) {
       await player.seek(Duration.zero);
     } else if (player.hasPrevious) {
@@ -585,7 +680,9 @@ class MusicController extends Notifier<MusicState> {
 
   Future<void> seek(Duration position) => _transport(() async {
     final player = _player;
-    if (player == null) return;
+    if (player == null) {
+      return;
+    }
     final duration = state.duration;
     final ms = position.inMilliseconds.clamp(0, duration.inMilliseconds);
     _listening.discontinuity();
@@ -602,7 +699,9 @@ class MusicController extends Notifier<MusicState> {
 
   Future<void> jumpTo(int index) => _transport(() async {
     final player = _player;
-    if (player == null || index < 0 || index >= state.queueIds.length) return;
+    if (player == null || index < 0 || index >= state.queueIds.length) {
+      return;
+    }
     await player.seek(Duration.zero, index: index);
 
     if (!_disposed) {
@@ -617,9 +716,13 @@ class MusicController extends Notifier<MusicState> {
   Future<void> toggleShuffle() => _transport(() async {
     final player = await _audio();
     final shuffle = !state.shuffle;
-    if (shuffle) await player.shuffle();
+    if (shuffle) {
+      await player.shuffle();
+    }
     await player.setShuffleModeEnabled(shuffle);
-    if (!_disposed) state = state.copyWith(shuffle: shuffle);
+    if (!_disposed) {
+      state = state.copyWith(shuffle: shuffle);
+    }
   });
 
   Future<void> cycleRepeat() => _transport(() async {
@@ -630,15 +733,21 @@ class MusicController extends Notifier<MusicState> {
       LoopMode.one => LoopMode.off,
     };
     await player.setLoopMode(next);
-    if (!_disposed) state = state.copyWith(repeat: next);
+    if (!_disposed) {
+      state = state.copyWith(repeat: next);
+    }
   });
 
   Future<void> toggleFavorite(Song song) => _safeLibraryEdit(() async {
     final matching = state.songs.where((item) => item.id == song.id);
-    if (matching.isEmpty) return;
+    if (matching.isEmpty) {
+      return;
+    }
     final updated = !matching.first.isFavorite;
     await _store.setFavorite(song.id, updated);
-    if (_disposed) return;
+    if (_disposed) {
+      return;
+    }
     state = state.copyWith(
       songs: [
         for (final item in state.songs)
@@ -648,20 +757,25 @@ class MusicController extends Notifier<MusicState> {
   });
 
   Future<MusicPlaylist> createPlaylist(String name) => _libraryEdit(() async {
-    if (name.trim().isEmpty)
+    if (name.trim().isEmpty) {
       throw const FormatException('Enter a playlist name.');
+    }
     final playlist = await _store.createPlaylist(name);
-    if (!_disposed)
+    if (!_disposed) {
       state = state.copyWith(playlists: [...state.playlists, playlist]);
+    }
     return playlist;
   });
 
   Future<void> renamePlaylist(MusicPlaylist playlist, String name) =>
       _libraryEdit(() async {
-        if (name.trim().isEmpty)
+        if (name.trim().isEmpty) {
           throw const FormatException('Enter a playlist name.');
+        }
         await _store.renamePlaylist(playlist.id, name);
-        if (_disposed) return;
+        if (_disposed) {
+          return;
+        }
         state = state.copyWith(
           playlists: [
             for (final item in state.playlists)
@@ -675,7 +789,9 @@ class MusicController extends Notifier<MusicState> {
 
   Future<void> deletePlaylist(MusicPlaylist playlist) => _libraryEdit(() async {
     await _store.deletePlaylist(playlist.id);
-    if (_disposed) return;
+    if (_disposed) {
+      return;
+    }
     state = state.copyWith(
       playlists: [
         for (final item in state.playlists)
@@ -684,22 +800,25 @@ class MusicController extends Notifier<MusicState> {
     );
   });
 
-  Future<void> toggleSongInPlaylist(MusicPlaylist playlist, Song song) =>
-      _safeLibraryEdit(() async {
-        final matching = state.playlists.where(
-          (item) => item.id == playlist.id,
-        );
-        if (matching.isEmpty || !state.songs.any((item) => item.id == song.id))
-          return;
-        final ids = List<String>.from(matching.first.songIds);
-        ids.contains(song.id) ? ids.remove(song.id) : ids.add(song.id);
-        await _store.updatePlaylistTracks(playlist.id, ids);
-        if (_disposed) return;
-        state = state.copyWith(
-          playlists: [
-            for (final item in state.playlists)
-              if (item.id == playlist.id) item.copyWith(songIds: ids) else item,
-          ],
-        );
-      });
+  Future<void> toggleSongInPlaylist(
+    MusicPlaylist playlist,
+    Song song,
+  ) => _safeLibraryEdit(() async {
+    final matching = state.playlists.where((item) => item.id == playlist.id);
+    if (matching.isEmpty || !state.songs.any((item) => item.id == song.id)) {
+      return;
+    }
+    final ids = List<String>.from(matching.first.songIds);
+    ids.contains(song.id) ? ids.remove(song.id) : ids.add(song.id);
+    await _store.updatePlaylistTracks(playlist.id, ids);
+    if (_disposed) {
+      return;
+    }
+    state = state.copyWith(
+      playlists: [
+        for (final item in state.playlists)
+          if (item.id == playlist.id) item.copyWith(songIds: ids) else item,
+      ],
+    );
+  });
 }
