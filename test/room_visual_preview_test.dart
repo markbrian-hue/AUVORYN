@@ -152,6 +152,15 @@ void main() {
           companion: RoomCompanion.forStyle(CompanionStyle.emoBoy)
               .copyWith(pose: CompanionPose.window)),
         const Size(430, 520));
+    await capture('companion-3d-girl-sofa',
+        room(const RoomSettings(reducedMotion: true),
+          companion: RoomCompanion.forStyle(CompanionStyle.girl)),
+        const Size(430, 520));
+    await capture('companion-3d-boy-standing',
+        room(const RoomSettings(reducedMotion: true),
+          companion: RoomCompanion.forStyle(CompanionStyle.boy)
+              .copyWith(pose: CompanionPose.standing)),
+        const Size(430, 520));
     await capture(
       'listening-scenes',
       const ListeningScenesSheet(),

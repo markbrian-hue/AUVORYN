@@ -1,6 +1,5 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/features/companion/domain/room_companion.dart';
-import 'package:auvoryn/features/companion/presentation/room_companion_painter.dart';
 import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/features/home_room/domain/room_camera.dart';
 import 'package:auvoryn/features/home_room/presentation/room_diorama.dart';
@@ -200,10 +199,12 @@ class _RoomSceneState extends State<RoomScene>
                     builder: (context, _) {
                       final camera = RoomCamera(orbit: _orbit.value);
                       if (_geometry?.settings != widget.settings ||
-                          _geometry?.light != _light.value) {
+                          _geometry?.light != _light.value ||
+                          _geometry?.companion != widget.companion) {
                         _geometry = RoomDioramaGeometry(
                           widget.settings,
                           _light.value,
+                          companion: widget.companion,
                         );
                       }
                       final architecture = CustomPaint(
@@ -244,18 +245,6 @@ class _RoomSceneState extends State<RoomScene>
                               ),
                             ),
                           ),
-                          if (widget.companion?.visible ?? false)
-                            IgnorePointer(
-                              child: RepaintBoundary(
-                                child: CustomPaint(
-                                  painter: RoomCompanionPainter(
-                                    companion: widget.companion!,
-                                    camera: camera,
-                                    lampBrightness: _light.value,
-                                  ),
-                                ),
-                              ),
-                            ),
                           if (_showControls) ..._hotspots(camera, size),
                         ],
                       );
