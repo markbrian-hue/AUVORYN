@@ -238,12 +238,15 @@ class ListeningSessionController extends Notifier<SessionStatus> {
     final missedByMs = (_now - session.deadlineMs).clamp(0, 86400000);
     state = const SessionStatus(restoring: false, busy: true);
     try {
-      await _persist(null);
       if (session.endBehavior == SessionEndBehavior.fadeAndPause) {
         await ref.read(sessionAudioDriverProvider).fadeAndPause(
           fade: missedByMs < 3000,
         );
       }
+      // Keep the expired deadline durable until the audio action finishes.
+      // If the process dies during the fade, restoration can retry the stop
+      // instead of losing the session before playback was silenced.
+      await _persist(null);
       if (!_disposed) state = const SessionStatus(restoring: false);
     } catch (error) {
       if (!_disposed) {
