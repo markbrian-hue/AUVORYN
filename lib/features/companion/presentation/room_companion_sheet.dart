@@ -88,7 +88,7 @@ class RoomCompanionSheet extends ConsumerWidget {
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final style in CompanionStyle.values)
               ChoiceChip(
-                key: Key('companion_style_' + style.name),
+                key: Key('companion_style_${style.name}'),
                 selected: companion.style == style,
                 label: Text(style.label),
                 onSelected: editable ? (_) => apply(controller.setStyle(style))
@@ -100,7 +100,7 @@ class RoomCompanionSheet extends ConsumerWidget {
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final pose in CompanionPose.values)
               ChoiceChip(
-                key: Key('companion_pose_' + pose.name),
+                key: Key('companion_pose_${pose.name}'),
                 selected: companion.pose == pose,
                 label: Text(pose.label),
                 onSelected: editable ? (_) => apply(controller.setPose(pose))
@@ -112,7 +112,7 @@ class RoomCompanionSheet extends ConsumerWidget {
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final hair in CompanionHair.values)
               ChoiceChip(
-                key: Key('companion_hair_' + hair.name),
+                key: Key('companion_hair_${hair.name}'),
                 selected: companion.hair == hair,
                 label: Text(hair.label),
                 onSelected: editable ? (_) => apply(controller.setHair(hair))
@@ -124,7 +124,7 @@ class RoomCompanionSheet extends ConsumerWidget {
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final skin in CompanionSkin.values)
               ChoiceChip(
-                key: Key('companion_skin_' + skin.name),
+                key: Key('companion_skin_${skin.name}'),
                 selected: companion.skin == skin,
                 label: Text(skin.label),
                 onSelected: editable ? (_) => apply(controller.setSkin(skin))
@@ -136,7 +136,7 @@ class RoomCompanionSheet extends ConsumerWidget {
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final outfit in CompanionOutfit.values)
               ChoiceChip(
-                key: Key('companion_outfit_' + outfit.name),
+                key: Key('companion_outfit_${outfit.name}'),
                 selected: companion.outfit == outfit,
                 label: Text(outfit.label),
                 onSelected: editable

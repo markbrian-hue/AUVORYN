@@ -53,7 +53,7 @@ class RoomCompanionController extends Notifier<RoomCompanionStatus> {
         state = RoomCompanionStatus(
           loading: false,
           readFailed: true,
-          error: 'Unable to read your companion settings: ' + error.toString(),
+          error: 'Unable to read your companion settings: $error',
         );
       }
     }
@@ -80,7 +80,7 @@ class RoomCompanionController extends Notifier<RoomCompanionStatus> {
         state = RoomCompanionStatus(
           companion: before,
           loading: false,
-          error: 'Could not save companion: ' + error.toString(),
+          error: 'Could not save companion: $error',
         );
       }
       return false;
