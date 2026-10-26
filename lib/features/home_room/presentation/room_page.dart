@@ -2,6 +2,8 @@ import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/core/widgets/auvoryn_logo.dart';
+import 'package:auvoryn/features/companion/application/room_companion_controller.dart';
+import 'package:auvoryn/features/companion/presentation/room_companion_sheet.dart';
 import 'package:auvoryn/features/atmosphere/presentation/atmosphere_sheet.dart';
 import 'package:auvoryn/features/atmosphere/presentation/room_mixer_sheet.dart';
 import 'package:auvoryn/features/scenes/presentation/listening_scenes_sheet.dart';
@@ -21,6 +23,7 @@ class RoomPage extends ConsumerWidget {
     final settings = ref.watch(roomSettingsProvider);
     final song = ref.watch(musicProvider.select((m) => m.currentSong));
     final playing = ref.watch(musicProvider.select((m) => m.playing));
+    final companionState = ref.watch(roomCompanionProvider);
     final controller = ref.read(roomSettingsProvider.notifier);
     Future<void> save(Future<bool> operation) async {
       if (!await operation && context.mounted) {
@@ -110,6 +113,8 @@ class RoomPage extends ConsumerWidget {
                   const SizedBox(height: 24),
                   RoomScene(
                     settings: settings,
+                    companion: companionState.loading || companionState.readFailed
+                        ? null : companionState.companion,
                     hasTrack: song != null,
                     isPlaying: playing,
                     onRecordTap: openRecord,
@@ -150,6 +155,12 @@ class RoomPage extends ConsumerWidget {
                         label: 'Scenes',
                         icon: Icons.bookmark_border_rounded,
                         onTap: () => showListeningScenesSheet(context),
+                      ),
+                      _RoomAction(
+                        key: const Key('open_room_companion'),
+                        label: 'Companion',
+                        icon: Icons.person_outline_rounded,
+                        onTap: () => showRoomCompanionSheet(context),
                       ),
                       _RoomAction(
                         key: const Key('open_session'),

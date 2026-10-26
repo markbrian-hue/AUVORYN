@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:auvoryn/app/theme/app_theme.dart';
+import 'package:auvoryn/features/companion/application/room_companion_controller.dart';
+import 'package:auvoryn/features/companion/presentation/room_companion_sheet.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/features/atmosphere/presentation/atmosphere_sheet.dart';
 import 'package:auvoryn/features/atmosphere/presentation/room_mixer_sheet.dart';
@@ -22,6 +24,7 @@ class ImmersiveRoomPage extends ConsumerWidget {
     final room = ref.watch(roomSettingsProvider);
     final hasTrack = ref.watch(musicProvider.select((m) => m.currentSong != null));
     final playing = ref.watch(musicProvider.select((m) => m.playing));
+    final companionState = ref.watch(roomCompanionProvider);
 
     return Scaffold(
       backgroundColor: AuvorynColors.ink,
@@ -61,6 +64,8 @@ class ImmersiveRoomPage extends ConsumerWidget {
                     width: width,
                     child: RoomScene(
                       settings: room,
+                      companion: companionState.loading || companionState.readFailed
+                          ? null : companionState.companion,
                       hasTrack: hasTrack,
                       isPlaying: playing,
                       initiallyShowControls: false,
@@ -92,6 +97,12 @@ class ImmersiveRoomPage extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              TextButton.icon(
+                onPressed: () => showRoomCompanionSheet(context),
+                icon: const Icon(Icons.person_outline_rounded, size: 18),
+                label: const Text('Companion'),
+              ),
+              const SizedBox(width: 6),
               TextButton.icon(
                 onPressed: () => showRoomMixerSheet(context),
                 icon: const Icon(Icons.tune_rounded, size: 18),

@@ -2,6 +2,10 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:auvoryn/app/theme/app_theme.dart';
+import 'package:auvoryn/features/companion/application/room_companion_controller.dart';
+import 'package:auvoryn/features/companion/data/room_companion_store.dart';
+import 'package:auvoryn/features/companion/domain/room_companion.dart';
+import 'package:auvoryn/features/companion/presentation/room_companion_sheet.dart';
 import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/core/settings/room_settings_controller.dart';
 import 'package:auvoryn/features/home_room/presentation/room_page.dart';
@@ -46,6 +50,13 @@ class _PreviewSessionRepository implements SessionRepository {
   Future<void> save(ListeningSession? value) async {}
 }
 
+class _PreviewCompanionRepository implements RoomCompanionRepository {
+  @override
+  Future<RoomCompanion> load() async => const RoomCompanion();
+  @override
+  Future<void> save(RoomCompanion companion) async {}
+}
+
 // Opt-in CI capture of actual Flutter output. This is not a performance benchmark
 // or a golden-image assertion, and does not change production behavior.
 void main() {
@@ -88,6 +99,9 @@ void main() {
               sessionRepositoryProvider.overrideWithValue(
                 _PreviewSessionRepository(),
               ),
+              roomCompanionRepositoryProvider.overrideWithValue(
+                _PreviewCompanionRepository(),
+              ),
             ],
             child: MaterialApp(
               debugShowCheckedModeBanner: false,
@@ -115,11 +129,12 @@ void main() {
       });
     }
 
-    Widget room(RoomSettings settings) => Center(
+    Widget room(RoomSettings settings, {RoomCompanion? companion}) => Center(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: RoomScene(
           settings: settings,
+          companion: companion,
           hasTrack: true,
           onRecordTap: () {},
           onWindowTap: () {},
@@ -130,6 +145,13 @@ void main() {
       ),
     );
     await capture('home', const RoomPage(), const Size(390, 1200));
+    await capture('companion-editor', const RoomCompanionSheet(),
+        const Size(430, 1100));
+    await capture('companion-emo-boy',
+        room(const RoomSettings(reducedMotion: true),
+          companion: RoomCompanion.forStyle(CompanionStyle.emoBoy)
+              .copyWith(pose: CompanionPose.window)),
+        const Size(430, 520));
     await capture(
       'listening-scenes',
       const ListeningScenesSheet(),

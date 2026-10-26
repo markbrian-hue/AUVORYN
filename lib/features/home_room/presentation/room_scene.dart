@@ -1,4 +1,6 @@
 import 'package:auvoryn/app/theme/app_theme.dart';
+import 'package:auvoryn/features/companion/domain/room_companion.dart';
+import 'package:auvoryn/features/companion/presentation/room_companion_painter.dart';
 import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/features/home_room/domain/room_camera.dart';
 import 'package:auvoryn/features/home_room/presentation/room_diorama.dart';
@@ -17,6 +19,7 @@ class RoomScene extends StatefulWidget {
     required this.onSpeakerTap,
     this.hasTrack = false,
     this.isPlaying = false,
+    this.companion,
     this.initiallyShowControls = true,
     super.key,
   });
@@ -28,6 +31,7 @@ class RoomScene extends StatefulWidget {
   final VoidCallback onSpeakerTap;
   final bool hasTrack;
   final bool isPlaying;
+  final RoomCompanion? companion;
   final bool initiallyShowControls;
   @override
   State<RoomScene> createState() => _RoomSceneState();
@@ -240,6 +244,18 @@ class _RoomSceneState extends State<RoomScene>
                               ),
                             ),
                           ),
+                          if (widget.companion?.visible ?? false)
+                            IgnorePointer(
+                              child: RepaintBoundary(
+                                child: CustomPaint(
+                                  painter: RoomCompanionPainter(
+                                    companion: widget.companion!,
+                                    camera: camera,
+                                    lampBrightness: _light.value,
+                                  ),
+                                ),
+                              ),
+                            ),
                           if (_showControls) ..._hotspots(camera, size),
                         ],
                       );
