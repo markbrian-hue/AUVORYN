@@ -28,7 +28,7 @@ void main() {
       'Change weather',
       'Turn lamp off',
       'Open playlists',
-      'Play music at speakers',
+      'Open music and ambience mixer',
     ]) {
       await tester.tap(find.byTooltip(label));
       await tester.pump(const Duration(milliseconds: 20));
@@ -54,13 +54,13 @@ void main() {
     await tester.pumpWidget(room(
       const RoomSettings(mood: RoomMood.lightRain), playing: true));
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.byTooltip('Pause music at speakers'), findsOneWidget);
+    expect(find.byTooltip('Open music and ambience mixer'), findsOneWidget);
     await tester.pumpWidget(room(const RoomSettings(
       mood: RoomMood.thunderstorm, lampOn: false, reducedMotion: true,
     ), playing: false));
     await tester.pump(const Duration(milliseconds: 25));
     expect(find.byTooltip('Turn lamp on'), findsOneWidget);
-    expect(find.byTooltip('Play music at speakers'), findsOneWidget);
+    expect(find.byTooltip('Open music and ambience mixer'), findsOneWidget);
     expect(tester.takeException(), isNull);
     // Reduced motion removes continuously scheduled scene frames.
     await tester.pump(const Duration(seconds: 6));

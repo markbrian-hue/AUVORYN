@@ -1,6 +1,7 @@
 import 'package:auvoryn/app/routing/navigation_shell.dart';
 import 'package:auvoryn/app/theme/app_theme.dart';
 import 'package:auvoryn/features/home_room/presentation/room_page.dart';
+import 'package:auvoryn/features/home_room/presentation/immersive_room_page.dart';
 import 'package:auvoryn/features/library/presentation/library_page.dart';
 import 'package:auvoryn/features/library/presentation/playlist_detail_page.dart';
 import 'package:auvoryn/features/music/presentation/now_playing_page.dart';
@@ -33,6 +34,10 @@ final appRouter = GoRouter(
           GoRoute(path: '/memories', builder: (_, _) => const MemoriesPage()),
         ]),
       ],
+    ),
+    GoRoute(
+      path: '/immersive',
+      builder: (context, state) => const ImmersiveRoomPage(),
     ),
     GoRoute(
       path: '/now-playing',

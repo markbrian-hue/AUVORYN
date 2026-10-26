@@ -22,6 +22,7 @@ class AmbienceStatus {
 class AmbienceController extends Notifier<AmbienceStatus> {
   ambient.AudioPlayer? _player;
   String? _asset;
+  double _lastVolume = .36;
   bool _disposed = false;
   Future<void> _serial = Future<void>.value();
 
@@ -44,9 +45,36 @@ class AmbienceController extends Notifier<AmbienceStatus> {
     return next;
   }
 
+  /// Sleep completion mutes only the ambient player. The selected preset and
+  /// saved ambience volume are retained for the next explicit user change.
+  Future<void> stopForSleep({bool fade = true}) {
+    final next = _serial.catchError((Object _) {}).then((_) async {
+      final player = _player;
+      if (_disposed || player == null) return;
+      try {
+        if (fade && state.active) {
+          // Native audio runs independently of the music media session.
+          for (var i = 1; i <= 15; i++) {
+            if (_disposed) break;
+            final remaining = (1 - i / 15).clamp(0.0, 1.0);
+            await player.setVolume(_lastVolume * remaining);
+            await Future<void>.delayed(const Duration(milliseconds: 130));
+          }
+        }
+        await player.stop();
+      } finally {
+        _asset = null;
+        if (!_disposed) state = const AmbienceStatus();
+      }
+    });
+    _serial = next;
+    return next;
+  }
+
   Future<void> _apply(RoomSettings settings) async {
     if (_disposed) return;
     try {
+      _lastVolume = settings.ambienceVolume;
       if (!settings.ambienceEnabled) {
         if (_player != null) await _player!.stop();
         _asset = null;

@@ -46,6 +46,10 @@ class MusicState {
     this.duration = Duration.zero,
     this.playing = false,
     this.loading = false,
+    this.importTotal = 0,
+    this.importDone = 0,
+    this.importDuplicates = 0,
+    this.importLabel = '',
     this.restoring = false,
     this.shuffle = false,
     this.repeat = LoopMode.off,
@@ -60,6 +64,10 @@ class MusicState {
   final Duration duration;
   final bool playing;
   final bool loading;
+  final int importTotal;
+  final int importDone;
+  final int importDuplicates;
+  final String importLabel;
   final bool restoring;
   final bool shuffle;
   final LoopMode repeat;
@@ -88,6 +96,10 @@ class MusicState {
     Duration? duration,
     bool? playing,
     bool? loading,
+    int? importTotal,
+    int? importDone,
+    int? importDuplicates,
+    String? importLabel,
     bool? restoring,
     bool? shuffle,
     LoopMode? repeat,
@@ -102,6 +114,10 @@ class MusicState {
     duration: duration ?? this.duration,
     playing: playing ?? this.playing,
     loading: loading ?? this.loading,
+    importTotal: importTotal ?? this.importTotal,
+    importDone: importDone ?? this.importDone,
+    importDuplicates: importDuplicates ?? this.importDuplicates,
+    importLabel: importLabel ?? this.importLabel,
     restoring: restoring ?? this.restoring,
     shuffle: shuffle ?? this.shuffle,
     repeat: repeat ?? this.repeat,
@@ -111,6 +127,8 @@ class MusicState {
 
 class MusicController extends Notifier<MusicState> {
   AudioPlayer? _player;
+  bool _sleepFinishing = false;
+  double _sleepGain = 1.0;
   Future<AudioPlayer>? _audioInitialization;
   Future<void> _transportWrites = Future<void>.value();
   Future<void> _libraryWrites = Future<void>.value();
@@ -139,7 +157,7 @@ class MusicController extends Notifier<MusicState> {
     ref.listen<RoomSettings>(roomSettingsProvider, (previous, next) {
       if (previous?.musicVolume != next.musicVolume && _player != null) {
         unawaited(
-          _player!.setVolume(next.musicVolume).catchError((Object error) {
+          _player!.setVolume(next.musicVolume * _sleepGain).catchError((Object error) {
             if (!_disposed) {
               state = state.copyWith(error: 'Unable to change volume: $error');
             }
@@ -177,7 +195,7 @@ class MusicController extends Notifier<MusicState> {
       if (_disposed) {
         throw StateError('Music controller is closed.');
       }
-      await player.setVolume(ref.read(roomSettingsProvider).musicVolume);
+      await player.setVolume(ref.read(roomSettingsProvider).musicVolume * _sleepGain);
       if (_disposed) {
         throw StateError('Music controller is closed.');
       }
@@ -456,7 +474,10 @@ class MusicController extends Notifier<MusicState> {
     if (_disposed || state.loading) {
       return 0;
     }
-    state = state.copyWith(loading: true, clearError: true);
+    state = state.copyWith(
+      loading: true, clearError: true,
+      importDone: 0, importTotal: 0, importDuplicates: 0, importLabel: '',
+    );
     var count = 0;
     try {
       final selectedFiles = await FilePicker.pickFiles(
@@ -468,16 +489,30 @@ class MusicController extends Notifier<MusicState> {
       }
       final failures = <String>[];
       final imported = <Song>[];
+      var duplicates = 0;
+      var processed = 0;
+      state = state.copyWith(importTotal: selectedFiles.length);
       for (final file in selectedFiles) {
+        if (!_disposed) {
+          state = state.copyWith(importLabel: file.name);
+        }
         try {
           final song = await _store.importFile(file);
           if (song == null) {
+            duplicates++;
             continue;
           }
           imported.insert(0, song);
           count++;
         } catch (error) {
           failures.add('${file.name}: $error');
+        } finally {
+          processed++;
+          if (!_disposed) {
+            state = state.copyWith(
+              importDone: processed, importDuplicates: duplicates,
+            );
+          }
         }
       }
       if (_disposed) {
@@ -507,7 +542,7 @@ class MusicController extends Notifier<MusicState> {
       }
     } finally {
       if (!_disposed) {
-        state = state.copyWith(loading: false);
+        state = state.copyWith(loading: false, importLabel: '');
       }
     }
     return count;
@@ -655,6 +690,47 @@ class MusicController extends Notifier<MusicState> {
     }
   });
 
+  /// Temporarily fade the single native music player, then pause it. The
+  /// user's chosen volume is never persisted as zero or overwritten.
+  Future<void> pauseForSleep({bool fade = true}) async {
+    if (_sleepFinishing) {
+      return;
+    }
+    _sleepFinishing = true;
+    try {
+      await _transport(() async {
+        final player = _player;
+        if (player == null || !player.playing) {
+          return;
+        }
+        final level = ref.read(roomSettingsProvider).musicVolume;
+        try {
+          if (fade) {
+            for (var i = 1; i <= 15; i++) {
+              if (_disposed || !player.playing) {
+                break;
+              }
+              _sleepGain = 1 - i / 15;
+              await player.setVolume(level * _sleepGain);
+              await Future<void>.delayed(const Duration(milliseconds: 130));
+            }
+          }
+          if (!_disposed && player.playing) {
+            await player.pause();
+            _persistQueue();
+          }
+        } finally {
+          _sleepGain = 1;
+          if (!_disposed) {
+            await player.setVolume(ref.read(roomSettingsProvider).musicVolume);
+          }
+        }
+      });
+    } finally {
+      _sleepFinishing = false;
+    }
+  }
+
   Future<void> next() => _transport(() async {
     final player = _player;
     if (player == null) {
@@ -725,6 +801,104 @@ class MusicController extends Notifier<MusicState> {
         currentIndex: player.currentIndex ?? state.currentIndex,
       );
       _persistQueue();
+    }
+  });
+
+  /// Native queue operations retain the current audio source and progress.
+  /// Editing is disabled while shuffle is on because the effective native
+  /// playback order no longer matches the visible queue order.
+  Future<void> moveQueuedTrack(int from, int to) => _transport(() async {
+    final player = _player;
+    final ids = List<String>.of(state.queueIds);
+    if (player == null || state.shuffle ||
+        from < 0 || from >= ids.length || to < 0 ||
+        to >= ids.length || from == to) {
+      return;
+    }
+    _changingQueue = true;
+    try {
+      await player.moveAudioSource(from, to);
+      final id = ids.removeAt(from);
+      ids.insert(to, id);
+      if (!_disposed) {
+        state = state.copyWith(
+          queueIds: ids,
+          currentIndex: player.currentIndex ?? ids.indexOf(
+            state.currentSong?.id ?? ''),
+        );
+        _persistQueue();
+      }
+    } finally {
+      _changingQueue = false;
+    }
+  });
+
+  Future<void> playNextInQueue(Song song) => _transport(() async {
+    final player = _player;
+    if (player == null || state.shuffle || state.queueIds.isEmpty ||
+        !state.songs.any((s) => s.id == song.id)) {
+      return;
+    }
+    if (!await File(song.path).exists()) {
+      if (!_disposed) {
+        state = state.copyWith(error: 'This track is missing. Try reimporting it.');
+      }
+      return;
+    }
+    final ids = List<String>.of(state.queueIds);
+    final currentId = state.currentSong?.id;
+    if (currentId == song.id) {
+      return;
+    }
+    final oldIndex = ids.indexOf(song.id);
+    final target = oldIndex >= 0 && oldIndex < state.currentIndex
+        ? state.currentIndex : state.currentIndex + 1;
+    _changingQueue = true;
+    try {
+      if (oldIndex >= 0) {
+        if (oldIndex == target) {
+          return;
+        }
+        await player.moveAudioSource(oldIndex, target);
+        ids.removeAt(oldIndex);
+        ids.insert(target, song.id);
+      } else {
+        await player.insertAudioSource(target, _sources([song]).first);
+        ids.insert(target, song.id);
+      }
+      if (!_disposed) {
+        state = state.copyWith(
+          queueIds: ids,
+          currentIndex: player.currentIndex ?? ids.indexOf(currentId ?? ''),
+        );
+        _persistQueue();
+      }
+    } finally {
+      _changingQueue = false;
+    }
+  });
+
+  Future<void> removeQueuedTrack(int index) => _transport(() async {
+    final player = _player;
+    final ids = List<String>.of(state.queueIds);
+    if (player == null || state.shuffle || index < 0 ||
+        index >= ids.length || index == state.currentIndex) {
+      return;
+    }
+    final currentId = state.currentSong?.id;
+    _changingQueue = true;
+    try {
+      await player.removeAudioSourceAt(index);
+      ids.removeAt(index);
+      if (!_disposed) {
+        state = state.copyWith(
+          queueIds: ids,
+          currentIndex: player.currentIndex ?? ids.indexOf(currentId ?? ''),
+        );
+        _persistQueue();
+      }
+    } finally {
+      _changingQueue = false;
     }
   });
 

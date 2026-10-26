@@ -26,6 +26,21 @@ class RoomSettingsController extends Notifier<RoomSettings> {
 
   Future<bool> setLamp(bool value) => _update(state.copyWith(lampOn: value));
 
+  /// Applies an entire listening scene as one settings write. Accessibility
+  /// preferences remain outside scene ownership and are never overwritten.
+  Future<bool> applySceneSettings(RoomSettings next) => _update(
+    state.copyWith(
+      mood: next.mood,
+      windowView: next.windowView,
+      lampOn: next.lampOn,
+      lampPalette: next.lampPalette,
+      lampBrightness: next.lampBrightness,
+      ambienceEnabled: next.ambienceEnabled,
+      ambienceVolume: next.ambienceVolume,
+      musicVolume: next.musicVolume,
+    ),
+  );
+
   Future<bool> setWindowView(WindowView view) =>
     _update(state.copyWith(windowView: view));
 

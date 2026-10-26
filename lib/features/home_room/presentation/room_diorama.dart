@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:auvoryn/features/home_room/domain/room_geometry.dart';
+import 'package:auvoryn/features/companion/domain/room_companion.dart';
+import 'package:auvoryn/features/companion/presentation/room_companion_mesh.dart';
 
 import 'package:auvoryn/core/settings/room_settings.dart';
 import 'package:auvoryn/features/home_room/domain/room_camera.dart';
@@ -10,10 +12,11 @@ import 'package:flutter/material.dart';
 /// Authored 3D surfaces, projected and depth-sorted on Flutter's canvas.
 /// No downloaded model, WebView, sensor or separate rendering engine is used.
 class RoomDioramaGeometry {
-  RoomDioramaGeometry(this.settings, this.light)
-    : _model = _Apartment(settings, light);
+  RoomDioramaGeometry(this.settings, this.light, {this.companion})
+    : _model = _Apartment(settings, light, companion);
   final RoomSettings settings;
   final double light;
+  final RoomCompanion? companion;
   final _Apartment _model;
 }
 
@@ -45,7 +48,7 @@ class _Face {
 }
 
 class _Apartment {
-  _Apartment(this.settings, this.light) {
+  _Apartment(this.settings, this.light, this.companion) {
     _build();
     _tree = RoomBsp([
       // Triangles also make curved furniture and folded plant leaves planar.
@@ -60,6 +63,7 @@ class _Apartment {
   }
   final RoomSettings settings;
   final double light;
+  final RoomCompanion? companion;
   final _faces = <_Face>[];
   late final RoomBsp<_Face> _tree;
   Color get glow => switch (settings.lampPalette) {
@@ -416,6 +420,12 @@ class _Apartment {
         tip,
         RoomPoint(tip.x + .10, y + .11, tip.z - .10),
       ], i.isEven ? const Color(0xFF6D8A73) : const Color(0xFF4F705F));
+    }
+    final character = companion;
+    if (character != null && character.visible) {
+      // Integrate figure polygons with *all* existing room geometry so the
+      // sofa, wall, clothing, and limbs occlude each other in depth.
+      RoomCompanionMesh.build(character, face);
     }
   }
 
