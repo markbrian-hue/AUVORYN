@@ -87,11 +87,11 @@ class RoomCompanionSheet extends ConsumerWidget {
           label('CHOOSE YOUR COMPANION'),
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final style in CompanionStyle.values)
-              ChoiceChip(
+              _CompanionChoice(
                 key: Key('companion_style_${style.name}'),
                 selected: companion.style == style,
                 label: Text(style.label),
-                onSelected: editable ? (_) => apply(controller.setStyle(style))
+                onTap: editable ? () => apply(controller.setStyle(style))
                     : null,
               ),
           ]),
@@ -99,11 +99,11 @@ class RoomCompanionSheet extends ConsumerWidget {
           label('WHERE THEY RELAX'),
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final pose in CompanionPose.values)
-              ChoiceChip(
+              _CompanionChoice(
                 key: Key('companion_pose_${pose.name}'),
                 selected: companion.pose == pose,
                 label: Text(pose.label),
-                onSelected: editable ? (_) => apply(controller.setPose(pose))
+                onTap: editable ? () => apply(controller.setPose(pose))
                     : null,
               ),
           ]),
@@ -111,11 +111,11 @@ class RoomCompanionSheet extends ConsumerWidget {
           label('HAIR'),
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final hair in CompanionHair.values)
-              ChoiceChip(
+              _CompanionChoice(
                 key: Key('companion_hair_${hair.name}'),
                 selected: companion.hair == hair,
                 label: Text(hair.label),
-                onSelected: editable ? (_) => apply(controller.setHair(hair))
+                onTap: editable ? () => apply(controller.setHair(hair))
                     : null,
               ),
           ]),
@@ -123,11 +123,11 @@ class RoomCompanionSheet extends ConsumerWidget {
           label('COMPLEXION'),
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final skin in CompanionSkin.values)
-              ChoiceChip(
+              _CompanionChoice(
                 key: Key('companion_skin_${skin.name}'),
                 selected: companion.skin == skin,
                 label: Text(skin.label),
-                onSelected: editable ? (_) => apply(controller.setSkin(skin))
+                onTap: editable ? () => apply(controller.setSkin(skin))
                     : null,
               ),
           ]),
@@ -135,12 +135,12 @@ class RoomCompanionSheet extends ConsumerWidget {
           label('COZY LAYERS'),
           Wrap(spacing: 9, runSpacing: 8, children: [
             for (final outfit in CompanionOutfit.values)
-              ChoiceChip(
+              _CompanionChoice(
                 key: Key('companion_outfit_${outfit.name}'),
                 selected: companion.outfit == outfit,
                 label: Text(outfit.label),
-                onSelected: editable
-                    ? (_) => apply(controller.setOutfit(outfit))
+                onTap: editable
+                    ? () => apply(controller.setOutfit(outfit))
                     : null,
               ),
           ]),
@@ -155,4 +155,62 @@ class RoomCompanionSheet extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _CompanionChoice extends StatelessWidget {
+  const _CompanionChoice({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: label,
+    button: true,
+    selected: selected,
+    enabled: onTap != null,
+    child: ExcludeSemantics(
+      child: Material(
+        color: selected ? AuvorynColors.raised : AuvorynColors.ink,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14, vertical: 10,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (selected) ...[
+                    const Icon(Icons.check_rounded,
+                        size: 14, color: AuvorynColors.champagne),
+                    const SizedBox(width: 7),
+                  ],
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontFamily: 'Manrope',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: AuvorynColors.ivory,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }
