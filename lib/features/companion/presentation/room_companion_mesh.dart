@@ -19,7 +19,7 @@ class RoomCompanionMesh {
     final origin = switch (companion.pose) {
       CompanionPose.sofa => const _Vec(-1.94, 0, .87),
       CompanionPose.standing => const _Vec(1.40, 0, 1.76),
-      CompanionPose.window => const _Vec(1.92, 0, -1.38),
+      CompanionPose.window => const _Vec(2.68, 0, -1.18),
     };
     _Vec p(double x, double y, double z) =>
         _Vec(origin.x + x, y, origin.z + z);
