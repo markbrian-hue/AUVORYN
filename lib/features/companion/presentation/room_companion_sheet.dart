@@ -90,7 +90,7 @@ class RoomCompanionSheet extends ConsumerWidget {
               _CompanionChoice(
                 key: Key('companion_style_${style.name}'),
                 selected: companion.style == style,
-                label: Text(style.label),
+                label: style.label,
                 onTap: editable ? () => apply(controller.setStyle(style))
                     : null,
               ),
@@ -102,7 +102,7 @@ class RoomCompanionSheet extends ConsumerWidget {
               _CompanionChoice(
                 key: Key('companion_pose_${pose.name}'),
                 selected: companion.pose == pose,
-                label: Text(pose.label),
+                label: pose.label,
                 onTap: editable ? () => apply(controller.setPose(pose))
                     : null,
               ),
@@ -114,7 +114,7 @@ class RoomCompanionSheet extends ConsumerWidget {
               _CompanionChoice(
                 key: Key('companion_hair_${hair.name}'),
                 selected: companion.hair == hair,
-                label: Text(hair.label),
+                label: hair.label,
                 onTap: editable ? () => apply(controller.setHair(hair))
                     : null,
               ),
@@ -126,7 +126,7 @@ class RoomCompanionSheet extends ConsumerWidget {
               _CompanionChoice(
                 key: Key('companion_skin_${skin.name}'),
                 selected: companion.skin == skin,
-                label: Text(skin.label),
+                label: skin.label,
                 onTap: editable ? () => apply(controller.setSkin(skin))
                     : null,
               ),
@@ -138,7 +138,7 @@ class RoomCompanionSheet extends ConsumerWidget {
               _CompanionChoice(
                 key: Key('companion_outfit_${outfit.name}'),
                 selected: companion.outfit == outfit,
-                label: Text(outfit.label),
+                label: outfit.label,
                 onTap: editable
                     ? () => apply(controller.setOutfit(outfit))
                     : null,
